@@ -187,6 +187,7 @@ String that separated by comma or list of string."
       (overlay-put ov 'languagetool-rule rule)
       (overlay-put ov 'help-echo short-message)
       (overlay-put ov 'priority 1)
+      (overlay-put ov 'evaporate t)
       (overlay-put ov 'face 'languagetool-correction-face))))
 
 
@@ -251,7 +252,17 @@ String that separated by comma or list of string."
       t
     nil))
 
-(defun languagetool--show-corrections ()
+(defun languagetool--get-replacements (overlay)
+  "Returns the replacements of `overlay' in a list."
+  (let ((replacements (overlay-get overlay 'languagetool-replacements))
+        (list-replace '()))
+    (dotimes (index (length replacements))
+      (add-to-ordered-list
+       'list-replace
+       (cdr (assoc 'value (aref replacements index)))))
+    (reverse list-replace)))
+
+(defun languagetool--show-corrections (begin end)
   "Highlight corrections in the buffer."
   (languagetool--clear-buffer)
   (let ((corrections (cdr (assoc 'matches languagetool-output-parsed)))
@@ -261,8 +272,12 @@ String that separated by comma or list of string."
       (let ((offset (cdr (assoc 'offset correction)))
             (size (cdr (assoc 'length correction))))
         (languagetool--create-overlay
-         (+ (point-min) offset) (+ (point-min) offset size)
-         correction)))))
+         (+ begin offset) (+ begin offset size)
+         correction))))
+  (pop-mark)
+  (setq languagetool-hint--timer
+        (run-with-idle-timer languagetool-hint-idle-delay t
+                             languagetool-hint-function)))
 
 (defun languagetool--clear-buffer ()
   "Deletes all buffer overlays."
@@ -271,7 +286,9 @@ String that separated by comma or list of string."
     (save-excursion
       (dolist (ov (overlays-in (point-min) (point-max)))
         (when (overlay-get ov 'languagetool-message)
-          (delete-overlay ov))))))
+          (delete-overlay ov)))))
+  (when languagetool-hint--timer
+    (cancel-timer languagetool-hint--timer)))
 
 (defun languagetool-check (begin end)
   "Correct region of the current buffer and highlight errors."
@@ -281,7 +298,7 @@ String that separated by comma or list of string."
      (list (point-min) (point-max))))
   (languagetool--invoke-command-region begin end)
   (if (languagetool--check-corrections-p)
-      (languagetool--show-corrections)
+      (languagetool--show-corrections begin end)
     (message "LanguageTool finished, found no errors.")))
 
 (defun languagetool-clear-buffer ()
@@ -295,8 +312,8 @@ String that separated by comma or list of string."
 
 (defcustom languagetool-hint-function
   'languagetool-hint-default-function
-  "Function with one argument which displays information about
-the error in the minibuffer."
+  "Function which displays information about the error in the
+minibuffer. Must search for overlays at point."
   :group 'languagetool
   :type '(choice
           (const nil)
@@ -308,11 +325,25 @@ message."
   :group 'languagetool
   :type 'number)
 
-(defvar languagetool-hint--current-idle-delay nil)
-
 (defvar languagetool-hint--timer nil
   "Hold idle timer watch every LanguageTool processed buffer.")
 
+(defun languagetool-hint-default-function ()
+  "Default display function to be used by LanguageTool to show
+information."
+  (dolist (ov (overlays-at (point)))
+    (when (overlay-get ov 'languagetool-message)
+      (unless (current-message)
+        (message
+         "%s%s" (overlay-get ov 'languagetool-short-message)
+         (if (/= 0
+                 (length (overlay-get ov 'languagetool-replacements)))
+             (concat
+              " -> ("
+              (mapconcat
+               'identity (languagetool--get-replacements ov) ", ")
+              ")")
+           ""))))))
 
 (provide 'languagetool)
 ;;; languagetool.el ends here
