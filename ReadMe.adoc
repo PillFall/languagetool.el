@@ -1,0 +1,12 @@
+= languagetool.el
+Joar Buitago <jebuitragoc@unal.edu.co>
+v0.0.1, 2020-01-21
+
+This emacs package creates a pipeline to working with LanguageTool
+command line jar file and correct spelling errors and grammatical.
+
+This program was based on
+link:https://github.com/mhayashi1120/Emacs-langtool[mhayashi1120
+Emacs-Langtool], it's intended to make a pipeline througt emacs and
+parse json output, making it incompatible with the original version,
+that's why this package is not forked from github.
