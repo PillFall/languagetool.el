@@ -124,20 +124,16 @@ String that separated by comma or list of string."
 (make-variable-buffer-local 'languagetool-mode-line-process)
 (put 'languagetool-mode-line-process 'risky-local-variable t)
 
-(defvar languagetool-error-buffer-name "*LanguageTool Errors*")
-
 (defvar languagetool-output-buffer-name "*LanguageTool Output*")
 
 (defvar languagetool-output-parsed nil)
 (make-variable-buffer-local 'languagetool-output-parsed)
 
-(
-
 (defvar languagetool--debug nil)
 
 (defvar languagetool--correction-keys
   ;; (q)uit, (c)lear, (e)dit, (i)gnore
-  [?0 ?1 ?2 ?3 ?4 ?5 ?6 ?7 ?8 ?9
+  [?1 ?2 ?3 ?4 ?5 ?6 ?7 ?8 ?9 ?0
       ;; suggestions may over 10.
       ;; define rest of alphabet just in case.
       ?a ?b ?d ?f ?g ?h ?j ?k ?l ?m ?n
@@ -146,61 +142,75 @@ String that separated by comma or list of string."
 
 ;; Functions:
 
-;; Basic Functions:
-
-(defun languagetool--debug (key fmt &rest args)
-  (when languagetool--debug
-    (let ((buf (get-buffer-create "*LanguageTool Debug*")))
-      (with-current-buffer buf
-        (goto-char (point-max))
-        (insert "---------- [" key "] ----------\n")
-        (insert (apply 'format fmt args) "\n")))))
-
-
 ;; Create Functions:
-
-(setq languagetool-java-arguments '("-Dfile.encoding=UTF-8"))
-(setq languagetool-language-tool-jar "/data/data/com.termux/files/home/.langtool/languagetool-commandline.jar")
 
 (defun languagetool--parse-java-arguments ()
   "Returns the java command to be used when correcting.."
-  (let ((command ""))
-    ;(setq command (concat command languagetool-java-bin " "))
-    (let ((java-args ""))
-      (dolist (arg languagetool-java-arguments)
-        (when (stringp arg)
-          (setq java-args (concat java-args arg " "))))
-      (setq command (concat command java-args)))
-    (setq command (concat command "-jar "))
-    (setq command (concat command languagetool-language-tool-jar " "))
-    (setq command (concat command "--json "))
+  (let ((command '()))
+    (dolist (arg languagetool-java-arguments)
+      (when (stringp arg)
+        (add-to-ordered-list 'command arg)))
+    (add-to-ordered-list 'command "-jar")
+    (add-to-ordered-list 'command languagetool-language-tool-jar)
+    (add-to-ordered-list 'command "-c")
+    (add-to-ordered-list 'command "utf8")
+    (add-to-ordered-list 'command "--json")
     (when (stringp languagetool-default-language)
       (if (string= languagetool-default-language "auto")
-          (setq command (concat command "-adl "))
+          (add-to-ordered-list 'command "-adl")
         (progn
-          (setq command (concat command "-l "))
-          (setq command (concat command languagetool-default-language)))))
+          (add-to-ordered-list 'command "-l")
+          (add-to-ordered-list 'command languagetool-default-language))))
     (when (stringp languagetool-mother-tongue)
-      (setq command (concat command "-m "))
-      (setq command (concat command languagetool-mother-tongue " ")))
+      (add-to-ordered-list 'command "-m")
+      (add-to-ordered-list 'command languagetool-mother-tongue))
     (let ((rules ""))
       (dolist (rule languagetool-disabled-rules)
         (when (stringp rule)
           (setq rules (concat rules rule ","))))
       (unless (string= rules "")
-        (setq command (concat command "-d "))
-        (setq command (concat command rules))))
-    command))
+        (add-to-ordered-list 'command "-d")
+        (add-to-ordered-list 'command rules)))
+    (reverse command)))
 
 (defun languagetool--create-overlay (begin end correction)
   "Creates an overlay face for corrections."
   (save-excursion
     (let ((ov (make-overlay begin end))
-          (short-message (cdr (assoc 'shortMessage correction))))
+          (short-message (cdr (assoc 'shortMessage correction)))
+          (message (cdr (assoc 'message correction)))
+          (replacements (cdr (assoc 'replacements correction)))
+          (rule (cdr (assoc 'rule correction))))
       (overlay-put ov 'languagetool-short-message short-message)
+      (overlay-put ov 'languagetool-message message)
+      (overlay-put ov 'languagetool-replacements replacements)
+      (overlay-put ov 'languagetool-rule rule)
       (overlay-put ov 'help-echo short-message)
       (overlay-put ov 'priority 1)
       (overlay-put ov 'face 'languagetool-correction-face))))
+
+
+;; Output and debug functions:
+
+(defun languagetool--write-debug-info (text)
+  "Writes to `languagetool-output-buffer-name' the debug
+  information."
+  (let ((current-string " ----- LanguageTool Command:"))
+    (put-text-property 0 (length current-string) 'face 'font-lock-warning-face
+                       current-string)
+    (insert current-string "\n\n"))
+  (insert languagetool-java-bin " "
+          (mapconcat (lambda (x) (format "%s" x))(languagetool--parse-java-arguments) " ")
+          "\n\n\n\n")
+  (let ((current-string " ----- LanguageTool Text:"))
+    (put-text-property 0 (length current-string) 'face 'font-lock-warning-face
+                       current-string)
+    (insert current-string "\n\n"))
+  (insert text "\n\n\n\n")
+  (let ((current-string " ----- LanguageTool Output:"))
+    (put-text-property 0 (length current-string) 'face 'font-lock-warning-face
+                       current-string)
+    (insert current-string "\n\n")))
 
 
 ;; Correction functions:
@@ -209,28 +219,30 @@ String that separated by comma or list of string."
   "Invoke LanguageTool passing the current region to STDIN."
   (save-excursion
     (let ((status 0))
-      (let ((buffer (get-buffer-create languagetool-output-buffer-name)))
+      (let ((buffer (get-buffer-create languagetool-output-buffer-name))
+            (text (buffer-substring-no-properties begin end)))
         (save-current-buffer
           (set-buffer buffer)
-          (erase-buffer)))
+          (erase-buffer)
+          (languagetool--write-debug-info text))
       (setq status
-            (call-process-region begin end
-                                 languagetool-java-bin
-                                 nil
-                                 languagetool-output-buffer-name
-                                 nil
-                                 (languagetool--parse-java-arguments)))
+            (apply 'call-process-region begin end
+                   languagetool-java-bin
+                   nil
+                   languagetool-output-buffer-name
+                   nil
+                   (languagetool--parse-java-arguments)))
       (when (/= status 0)
         (error "LanguageTool returned with status %d" status)))
     (let ((buffer (get-buffer languagetool-output-buffer-name))
           (json-parsed nil))
       (save-current-buffer
         (set-buffer buffer)
-        (goto-char (point-min))
-        (search-forward languagetool-json-search)
-        (backward-char (length languagetool-json-search))
+        (widen)
+        (goto-char (point-max))
+        (backward-sexp)
         (setq json-parsed (json-read)))
-      (setq languagetool-output-parsed json-parsed))))
+      (setq languagetool-output-parsed json-parsed)))))
 
 (defun languagetool--check-corrections-p ()
   "Returns t if corrections can be made or nil otherwise."
@@ -241,7 +253,7 @@ String that separated by comma or list of string."
 
 (defun languagetool--show-corrections ()
   "Highlight corrections in the buffer."
-  (interactive)
+  (languagetool--clear-buffer)
   (let ((corrections (cdr (assoc 'matches languagetool-output-parsed)))
         (correction nil))
     (dotimes (index (length corrections))
@@ -252,6 +264,15 @@ String that separated by comma or list of string."
          (+ (point-min) offset) (+ (point-min) offset size)
          correction)))))
 
+(defun languagetool--clear-buffer ()
+  "Deletes all buffer overlays."
+  (save-restriction
+    (widen)
+    (save-excursion
+      (dolist (ov (overlays-in (point-min) (point-max)))
+        (when (overlay-get ov 'languagetool-message)
+          (delete-overlay ov))))))
+
 (defun languagetool-check (begin end)
   "Correct region of the current buffer and highlight errors."
   (interactive
@@ -261,7 +282,36 @@ String that separated by comma or list of string."
   (languagetool--invoke-command-region begin end)
   (if (languagetool--check-corrections-p)
       (languagetool--show-corrections)
-    (message "LanguageTool finished founding no errors.")))
+    (message "LanguageTool finished, found no errors.")))
+
+(defun languagetool-clear-buffer ()
+  "Deletes all buffer corrections hightlights."
+  (interactive)
+  (languagetool--clear-buffer)
+  (message "Cleaned buffer from LanguageTool."))
+
+
+;; Hint Message:
+
+(defcustom languagetool-hint-function
+  'languagetool-hint-default-function
+  "Function with one argument which displays information about
+the error in the minibuffer."
+  :group 'languagetool
+  :type '(choice
+          (const nil)
+          function))
+
+(defcustom languagetool-hint-idle-delay 0.5
+  "Number of seconds while idle time to wait before showing error
+message."
+  :group 'languagetool
+  :type 'number)
+
+(defvar languagetool-hint--current-idle-delay nil)
+
+(defvar languagetool-hint--timer nil
+  "Hold idle timer watch every LanguageTool processed buffer.")
 
 
 (provide 'languagetool)
