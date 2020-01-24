@@ -1,4 +1,4 @@
-;;; languagetool.el ---  LanguageTool integration for grammar check
+;;; languagetool.el ---  LanguageTool integration for grammar check -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020  Joar Buitrago
 
@@ -22,7 +22,8 @@
 
 ;;; Commentary:
 
-;; This package passes the buffer to LanguageTool.
+;; Correct te buffer or region with LanguageTool and show its
+;; suggestions in the buffer
 
 ;;; Code:
 
@@ -56,7 +57,7 @@
 Described at http://wiki.languagetool.org/command-line-options,
 recomends to use:
 
-\(setq langtool-java-user-arguments '(\"-Dfile.encoding=UTF-8\"))"
+\(setq `langtool-java-user-arguments' '(\"-Dfile.encoding=UTF-8\"))"
   :group 'languagetool
   :type '(choice
           (repeat string)
@@ -82,11 +83,10 @@ This is string which indicate locale or `auto'."
 
 (defcustom languagetool-disabled-rules nil
   "Disabled rules pass to LanguageTool.
-String that separated by comma or list of string."
+List of strings."
   :group 'languagetool
   :type '(choice
-          (list string)
-          string))
+          (list string)))
 
 (defcustom languagetool-error-exists-hook nil
   "Hook run after LanguageTool process found any error(s)."
@@ -103,30 +103,6 @@ String that separated by comma or list of string."
   :group 'languagetool
   :type 'hook)
 
-
-;; Local Variables:
-
-(defvar languagetool-local-disabled-rules nil)
-(make-variable-buffer-local 'languagetool-local-disabled-rules)
-
-(defvar languagetool-buffer-process nil)
-(make-variable-buffer-local 'languagetool-buffer-process)
-
-(defvar languagetool-mode-line-message nil)
-(make-variable-buffer-local 'languagetool-mode-line-message)
-(put 'languagetool-mode-line-message 'risky-local-variable t)
-
-(defvar languagetool-mode-line-process nil)
-(make-variable-buffer-local 'languagetool-mode-line-process)
-(put 'languagetool-mode-line-process 'risky-local-variable t)
-
-(defvar languagetool-output-buffer-name "*LanguageTool Output*")
-
-(defvar languagetool-output-parsed nil)
-(make-variable-buffer-local 'languagetool-output-parsed)
-
-(defvar languagetool--debug nil)
-
 (defvar languagetool--correction-keys
   [?1 ?2 ?3 ?4 ?5 ?6 ?7 ?8 ?9 ?0
       ;; suggestions may over 10.
@@ -135,13 +111,27 @@ String that separated by comma or list of string."
       ?k ?l ?m ?n ?o ?p ?q ?r ?s ?t
       ?u ?v ?w ?x ?y ?z])
 
+(defvar languagetool-output-buffer-name "*LanguageTool Output*")
+
+
+;; Local Variables:
+
+(defvar languagetool-local-disabled-rules nil
+  "Disabled rules pass to LanguageTool.  Buffer local.
+List of strings.")
+(make-variable-buffer-local 'languagetool-local-disabled-rules)
+
+(defvar languagetool-output-parsed nil)
+(make-variable-buffer-local 'languagetool-output-parsed)
+
 
 ;; Functions:
 
 ;; Create Functions:
 
 (defun languagetool--parse-java-arguments ()
-  "Returns java arguments as a list of strings which will be used
+  "Return java arguments list.
+Return java arguments as a list of strings which will be used
 when correcting."
   (let ((command '()))
     (dolist (arg languagetool-java-arguments)
@@ -161,23 +151,39 @@ when correcting."
     (when (stringp languagetool-mother-tongue)
       (add-to-ordered-list 'command "-m")
       (add-to-ordered-list 'command languagetool-mother-tongue))
-    (let ((rules ""))
+    (let ((rules "")
+          (rules-first t))
       (dolist (rule languagetool-disabled-rules)
         (when (stringp rule)
-          (setq rules (concat rules rule ","))))
+          (if rules-first
+              (progn
+                (setq rules (concat rules rule))
+                (setq rules-first nil))
+            (setq rules (concat rules "," rule)))))
+      (dolist (rule languagetool-local-disabled-rules)
+        (when (stringp rule)
+          (if rules-first
+              (progn
+                (setq rules (concat rules rule))
+                (setq rules-first nil))
+            (setq rules (concat rules "," rule)))))
       (unless (string= rules "")
         (add-to-ordered-list 'command "-d")
         (add-to-ordered-list 'command rules)))
     (reverse command)))
 
 (defun languagetool--create-overlay (begin end correction)
-  "Creates an overlay face for corrections."
+  "Create an overlay face for corrections.
+Create an overlay for correction in the region delimited by
+`BEGIN' and `END', parsing `CORRECTION' as overlay properties."
   (save-excursion
     (let ((ov (make-overlay begin end))
           (short-message (cdr (assoc 'shortMessage correction)))
           (message (cdr (assoc 'message correction)))
           (replacements (cdr (assoc 'replacements correction)))
           (rule (cdr (assoc 'rule correction))))
+      (when (string= short-message "")
+        (setq short-message message))
       (overlay-put ov 'languagetool-short-message short-message)
       (overlay-put ov 'languagetool-message message)
       (overlay-put ov 'languagetool-replacements replacements)
@@ -191,8 +197,9 @@ when correcting."
 ;; Output and debug functions:
 
 (defun languagetool--write-debug-info (text)
-  "Writes to `languagetool-output-buffer-name' the debug
-information."
+  "Write `TEXT' in `LANGUAGETOOL-OUTPUT-BUFFER-NAME'.
+Write and format `TEXT' and debug information in the buffer with
+name `LANGUAGETOOL-OUTPUT-BUFFER-NAME'."
   (let ((current-string " ----- LanguageTool Command:"))
     (put-text-property 0 (length current-string) 'face 'font-lock-warning-face
                        current-string)
@@ -214,14 +221,15 @@ information."
 ;; Correction functions:
 
 (defun languagetool--invoke-command-region (begin end)
-  "Invoke LanguageTool passing the current region to STDIN."
+  "Invoke LanguageTool passing the current region to STDIN.
+The region is delimited by `BEGIN' and `END'."
   (languagetool--clear-buffer)
   (unless (executable-find languagetool-java-bin)
-    (error "Java could not be found."))
+    (error "Java could not be found"))
   (unless languagetool-language-tool-jar
-    (error "LanguageTool jar path is not set."))
+    (error "LanguageTool jar path is not set"))
   (unless (file-readable-p languagetool-language-tool-jar)
-    (error "LanguageTool jar is not readable or could not be found."))
+    (error "LanguageTool jar is not readable or could not be found"))
   (save-excursion
     (let ((status 0))
       (let ((buffer (get-buffer-create languagetool-output-buffer-name))
@@ -251,14 +259,14 @@ information."
   (pop-mark))
 
 (defun languagetool--check-corrections-p ()
-  "Returns t if corrections can be made or nil otherwise."
+  "Return t if corrections can be made or nil otherwise."
   (if (/= 0
          (length (cdr (assoc 'matches languagetool-output-parsed))))
       t
     nil))
 
 (defun languagetool--get-replacements (overlay)
-  "Returns the replacements of `overlay' in a list."
+  "Return the replacements of `OVERLAY' in a list."
   (let ((replacements (overlay-get overlay 'languagetool-replacements))
         (list-replace '()))
     (dotimes (index (length replacements))
@@ -267,8 +275,9 @@ information."
        (cdr (assoc 'value (aref replacements index)))))
     (reverse list-replace)))
 
-(defun languagetool--show-corrections (begin end)
-  "Highlight corrections in the buffer."
+(defun languagetool--show-corrections (begin)
+  "Highlight corrections in the buffer.
+Start highlighting in the region delimited by `BEGIN'."
   (let ((corrections (cdr (assoc 'matches languagetool-output-parsed)))
         (correction nil))
     (dotimes (index (length corrections))
@@ -296,7 +305,10 @@ information."
 
 ;;;###autoload
 (defun languagetool-check (begin end)
-  "Correct region of the current buffer and highlight errors."
+  "Correct the current buffer and highlight errors.
+If region is selected before calling this function it would be
+pased as argument.
+The region is delimited by `BEGIN' and `END'"
   (interactive
    (if (region-active-p)
        (list (region-beginning) (region-end))
@@ -304,7 +316,7 @@ information."
   (languagetool--invoke-command-region begin end)
   (if (languagetool--check-corrections-p)
       (progn
-        (languagetool--show-corrections begin end)
+        (languagetool--show-corrections begin)
         (run-hooks 'languagetool-error-exists-hook))
     (progn
       (message "LanguageTool finished, found no errors.")
@@ -317,21 +329,45 @@ information."
   (languagetool--clear-buffer)
   (message "Cleaned buffer from LanguageTool."))
 
+;;;###autoload
+(defun languagetool-set-language (lang)
+  "Change LanguageTool correction language."
+  (interactive
+   (list (read-string "Language: " nil nil 'auto)))
+  (setq languagetool-default-language lang))
+
 
 ;; Hint Message:
 
 (defcustom languagetool-hint-function
   'languagetool-hint-default-function
-  "Function which displays information about the error in the
-minibuffer. Must search for overlays at point."
+  "Display error information in the minibuffer.
+The function must search for overlays at point.
+You must pass the function symbol.
+
+A example hint function:
+\(defun `languagetool-hint-default-function' ()
+  \"Default hint display function.\"
+  (dolist (ov (overlays-at (point)))
+    (when (overlay-get ov 'languagetool-message)
+      (unless (current-message)
+        (message
+         \"%s%s\" (overlay-get ov 'languagetool-short-message)
+         (if (/= 0
+                 (length (overlay-get ov 'languagetool-replacements)))
+             (concat
+              \" -> (\"
+              (mapconcat
+               'identity (languagetool--get-replacements ov) \", \")
+              \")\")
+           \"\"))))))"
   :group 'languagetool
   :type '(choice
           (const nil)
           function))
 
 (defcustom languagetool-hint-idle-delay 0.5
-  "Number of seconds while idle time to wait before showing error
-message."
+  "Number of seconds while idle to wait before showing hint."
   :group 'languagetool
   :type 'number)
 
@@ -339,8 +375,7 @@ message."
   "Hold idle timer watch every LanguageTool processed buffer.")
 
 (defun languagetool-hint-default-function ()
-  "Default display function to be used by LanguageTool to show
-information."
+  "Default hint display function."
   (dolist (ov (overlays-at (point)))
     (when (overlay-get ov 'languagetool-message)
       (unless (current-message)
@@ -359,7 +394,8 @@ information."
 ;; Correction functions:
 
 (defun languagetool--parse-correction-message (overlay)
-  "Parse and style minibuffer correction."
+  "Parse and style minibuffer correction.
+Get the information about corrections from the argument `OVERLAY'."
   (let (msg)
     (setq msg (concat
                "[" (cdr (assoc 'id (overlay-get overlay 'languagetool-rule))) "] "))
@@ -395,7 +431,9 @@ information."
     msg))
 
 (defun languagetool--do-correction (pressed-key overlay)
-  "Correct an deletes the overlay with LanguageTool Suggestion."
+  "Correct an delete the overlay with LanguageTool Suggestion.
+The selected correction is given by `PRESSED-KEY' and the
+position, and suggestions are given by `OVERLAY'"
   (cond
    ((char-equal ?\C-i pressed-key)
     (progn
@@ -404,12 +442,12 @@ information."
    ((char-equal ?\C-s pressed-key)
     (goto-char (overlay-end overlay)))
    ((not (cl-position pressed-key languagetool--correction-keys))
-    (error "Key `%c' cannot be used." pressed-key))
+    (error "Key `%c' cannot be used" pressed-key))
    (t
     (let ((size (length (languagetool--get-replacements overlay)))
           (pos (cl-position pressed-key languagetool--correction-keys)))
       (when (> (1+ pos) size)
-        (error "Correction key `%c' cannot be used." pressed-key))
+        (error "Correction key `%c' cannot be used" pressed-key))
       (delete-region (overlay-start overlay) (overlay-end overlay))
       (insert (nth pos (languagetool--get-replacements overlay)))
       (delete-overlay overlay)))))
@@ -427,14 +465,13 @@ information."
 
 ;;;###autoload
 (defun languagetool-correct-at-point ()
-  "Pops up transient buffer which you can select the correction"
+  "Pops up transient buffer to do correction at point."
   (interactive)
   (languagetool--correct-point))
 
 ;;;###autoload
 (defun languagetool-correct-buffer ()
-  "Pops up transient buffer which you can select the corrections
-  to all errors found in current buffer"
+  "Pops up transient buffer to do corrections at buffer."
   (interactive)
   (save-excursion
     (dolist (ov (reverse (overlays-in (point-min) (point-max))))
