@@ -1,4 +1,5 @@
-(define-package
-  "LanguageTool"
-  "0.0.1"
-  "LanguageTool integration for grammar check")
+(define-package "languagetool" "0.1.0"
+  "LanguageTool integration for grammar check."
+  '((emacs "25.1"))
+  :keywords
+  '("grammar" "text" "docs" "tools"))

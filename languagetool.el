@@ -3,8 +3,9 @@
 ;; Copyright (C) 2020  Joar Buitrago
 
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
-;; Keywords: grammar text docs
-;; Version: 0.0.1
+;; Keywords: grammar text docs tools
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "25.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -87,17 +88,12 @@ String that separated by comma or list of string."
           (list string)
           string))
 
-(defcustom languagetool-json-search "{\"software\":"
-  "Search pattern to parse json output from LanguageTool."
-  :group 'languagetool
-  :type '(string))
-
 (defcustom languagetool-error-exists-hook nil
   "Hook run after LanguageTool process found any error(s)."
   :group 'languagetool
   :type 'hook)
 
-(defcustom languagetool-noerror-hook nil
+(defcustom languagetool-no-error-hook nil
   "Hook run after LanguageTool report no error."
   :group 'languagetool
   :type 'hook)
@@ -132,12 +128,12 @@ String that separated by comma or list of string."
 (defvar languagetool--debug nil)
 
 (defvar languagetool--correction-keys
-  ;; (q)uit, (c)lear, (e)dit, (i)gnore
   [?1 ?2 ?3 ?4 ?5 ?6 ?7 ?8 ?9 ?0
       ;; suggestions may over 10.
       ;; define rest of alphabet just in case.
-      ?a ?b ?d ?f ?g ?h ?j ?k ?l ?m ?n
-      ?o ?p ?r ?s ?t ?u ?v ?w ?x ?y ?z])
+      ?a ?b ?c ?d ?e ?f ?g ?h ?i ?j
+      ?k ?l ?m ?n ?o ?p ?q ?r ?s ?t
+      ?u ?v ?w ?x ?y ?z])
 
 
 ;; Functions:
@@ -218,6 +214,13 @@ String that separated by comma or list of string."
 
 (defun languagetool--invoke-command-region (begin end)
   "Invoke LanguageTool passing the current region to STDIN."
+  (languagetool--clear-buffer)
+  (unless (executable-find languagetool-java-bin)
+    (error "Java could not be found."))
+  (unless languagetool-language-tool-jar
+    (error "LanguageTool jar path is not set."))
+  (unless (file-readable-p languagetool-language-tool-jar)
+    (error "LanguageTool jar is not readable or could not be found."))
   (save-excursion
     (let ((status 0))
       (let ((buffer (get-buffer-create languagetool-output-buffer-name))
@@ -243,7 +246,8 @@ String that separated by comma or list of string."
         (goto-char (point-max))
         (backward-sexp)
         (setq json-parsed (json-read)))
-      (setq languagetool-output-parsed json-parsed)))))
+      (setq languagetool-output-parsed json-parsed))))
+  (pop-mark))
 
 (defun languagetool--check-corrections-p ()
   "Returns t if corrections can be made or nil otherwise."
@@ -264,7 +268,6 @@ String that separated by comma or list of string."
 
 (defun languagetool--show-corrections (begin end)
   "Highlight corrections in the buffer."
-  (languagetool--clear-buffer)
   (let ((corrections (cdr (assoc 'matches languagetool-output-parsed)))
         (correction nil))
     (dotimes (index (length corrections))
@@ -274,7 +277,6 @@ String that separated by comma or list of string."
         (languagetool--create-overlay
          (+ begin offset) (+ begin offset size)
          correction))))
-  (pop-mark)
   (setq languagetool-hint--timer
         (run-with-idle-timer languagetool-hint-idle-delay t
                              languagetool-hint-function)))
@@ -287,9 +289,11 @@ String that separated by comma or list of string."
       (dolist (ov (overlays-in (point-min) (point-max)))
         (when (overlay-get ov 'languagetool-message)
           (delete-overlay ov)))))
+  (run-hooks 'languagetool-finish-hook)
   (when languagetool-hint--timer
     (cancel-timer languagetool-hint--timer)))
 
+;;;###autoload
 (defun languagetool-check (begin end)
   "Correct region of the current buffer and highlight errors."
   (interactive
@@ -298,9 +302,14 @@ String that separated by comma or list of string."
      (list (point-min) (point-max))))
   (languagetool--invoke-command-region begin end)
   (if (languagetool--check-corrections-p)
-      (languagetool--show-corrections begin end)
-    (message "LanguageTool finished, found no errors.")))
+      (progn
+        (languagetool--show-corrections begin end)
+        (run-hooks 'languagetool-error-exists-hook))
+    (progn
+      (message "LanguageTool finished, found no errors.")
+      (run-hooks 'languagetool-no-error-hook))))
 
+;;;###autoload
 (defun languagetool-clear-buffer ()
   "Deletes all buffer corrections hightlights."
   (interactive)
@@ -344,6 +353,88 @@ information."
                'identity (languagetool--get-replacements ov) ", ")
               ")")
            ""))))))
+
+
+;; Correction functions:
+
+(defun languagetool--parse-correction-message (overlay)
+  "Parse and style minibuffer correction to output."
+  (let (msg)
+    (setq msg (concat
+               "[" (cdr (assoc 'id (overlay-get overlay 'languagetool-rule))) "] "))
+    (let ((current-string (format "%s" (overlay-get overlay 'languagetool-message))))
+        (put-text-property 0 (length current-string)
+                           'face 'font-lock-warning-face
+                           current-string)
+        (setq msg (concat msg current-string "\n")))
+    (let ((replacements (languagetool--get-replacements overlay)))
+      (when (< 0 (length replacements))
+        (setq msg (concat msg "\n"))
+        (dotimes (index (length replacements))
+          (let ((current-string (format "%c" (aref languagetool--correction-keys index))))
+            (put-text-property 0 (length current-string)
+                               'face 'font-lock-keyword-face
+                             current-string)
+            (setq msg (concat msg "[" current-string "]: ")))
+          (setq msg (concat msg (nth index replacements) "  ")))))
+    (let ((current-string "C-i"))
+      (put-text-property 0 (length current-string)
+                         'face 'font-lock-keyword-face
+                         current-string)
+      (setq msg (concat msg "\n[" current-string "]: Ignore  ")))
+    (let ((current-string "C-s"))
+      (put-text-property 0 (length current-string)
+                         'face 'font-lock-keyword-face
+                         current-string)
+      (setq msg (concat msg "[" current-string "]: Skip")))
+    msg))
+
+(defun languagetool--do-correction (pressed-key overlay)
+  "Correct an deletes the overlay with LanguageTool Sugestion."
+  (cond
+   ((char-equal ?\C-i pressed-key)
+    (progn
+      (goto-char (overlay-end overlay))
+      (delete-overlay overlay)))
+   ((char-equal ?\C-s pressed-key)
+    (goto-char (overlay-end overlay)))
+   (t
+    (let ((size (length (languagetool--get-replacements overlay)))
+          (pos (cl-position pressed-key languagetool--correction-keys)))
+      (when (> (1+ pos) size)
+        (error "Correction key `%c' cannot be used." pressed-key))
+      (delete-region (overlay-start overlay) (overlay-end overlay))
+      (insert (nth pos (languagetool--get-replacements overlay)))
+      (delete-overlay overlay)))))
+
+(defun languagetool--correct-point ()
+  "Show correction buffer at point and do correction."
+  (catch 'languagetool-correction
+    (let (pressed-key)
+      (dolist (ov (overlays-at (point)))
+        (when (overlay-get ov 'languagetool-message)
+          (setq pressed-key
+                (read-char (languagetool--parse-correction-message ov)))
+          (languagetool--do-correction pressed-key ov))))
+    (throw 'languagetool-correction nil)))
+
+;;;###autoload
+(defun languagetool-correct-at-point ()
+  "Pops up transient buffer which you can select the correction"
+  (interactive)
+  (languagetool--correct-point))
+
+;;;###autoload
+(defun languagetool-correct-buffer ()
+  "Pops up transient buffer which you can select the corrections
+  to all errors found in current buffer"
+  (interactive)
+  (save-excursion
+    (dolist (ov (reverse (overlays-in (point-min) (point-max))))
+      (when (overlay-get ov 'languagetool-message)
+        (goto-char (overlay-start ov))
+        (languagetool--correct-point)))))
+
 
 (provide 'languagetool)
 ;;; languagetool.el ends here
