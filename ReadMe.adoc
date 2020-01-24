@@ -2,11 +2,63 @@
 Joar Buitago <jebuitragoc@unal.edu.co>
 v0.0.1, 2020-01-21
 
-This emacs package creates a pipeline to working with LanguageTool
-command line jar file and correct spelling errors and grammatical.
+Use LanguageTool as your Emacs grammar and spelling corrector.
 
 This program was based on
-link:https://github.com/mhayashi1120/Emacs-langtool[mhayashi1120
-Emacs-Langtool], it's intended to make a pipeline througt emacs and
-parse json output, making it incompatible with the original version,
-that's why this package is not forked from github.
+link:https://github.com/mhayashi1120/Emacs-langtool/[mhayashi1120
+Emacs-Langtool], it's intended to make a pipeline through Emacs and
+parse JSON output, making it incompatible with the original version,
+that's why this package is not a forked version and it's made from
+scratch.
+
+
+
+== Getting Started
+
+The first thing you need is *Java*, so download and install it.
+
+You also need to download
+*link:https://languagetool.org/[LanguageTool] Desktop Version* from
+its official page.
+
+After download, extract the contents in the folder you want
+(e.g. `~/.languagetool/`), you will need to say to the package where
+is the `languagetool-commandline.jar` file in your `.emacs` file like:
+
+[source,lisp]
+----
+(setq languagetool-language-tool-jar
+      "~/.languagetool/languagetool-command-line-jar")
+----
+
+Or via customize.
+
+It's recomended to add a Java flag to process the files in UTF-8, so
+you should add to your `.emacs`:
+
+[source,lisp]
+----
+(setq languagetool-java-arguments '("Dfile.encoding=UTF-8"))
+----
+
+And finally you should tell which language are you using by default in
+your `.emacs` file like:
+
+[source,lisp]
+----
+(setq languagetool-default-language "en-GB")
+----
+
+
+
+== Usage
+
+There are only 4 commands to use, and if you want you can bind they to a key.
+
+- `languagetool-check` To check the active region or the buffer.
+- `languagetool-clear-buffer` To delete all the buffer highlights.
+- `languagetool-correct-at-point` To correct the warning at point.
+- `languagetool-correct-buffer` To correct the whole buffer.
+
+Once you are correcting with build in functions it will pop-up a
+correction buffer at the minibuffer, you only need to choose.

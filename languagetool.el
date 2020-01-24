@@ -46,7 +46,7 @@
 ;; Custom Variables:
 
 (defcustom languagetool-java-bin "java"
-  "Java executable name."
+  "Java executable path or name."
   :group 'languagetool
   :type 'file)
 
@@ -56,7 +56,7 @@
 Described at http://wiki.languagetool.org/command-line-options,
 recomends to use:
 
- \(setq langtool-java-user-arguments '(\"-Dfile.encoding=UTF-8\"))"
+\(setq langtool-java-user-arguments '(\"-Dfile.encoding=UTF-8\"))"
   :group 'languagetool
   :type '(choice
           (repeat string)
@@ -141,7 +141,8 @@ String that separated by comma or list of string."
 ;; Create Functions:
 
 (defun languagetool--parse-java-arguments ()
-  "Returns the java command to be used when correcting.."
+  "Returns java arguments as a list of strings which will be used
+when correcting."
   (let ((command '()))
     (dolist (arg languagetool-java-arguments)
       (when (stringp arg)
@@ -191,7 +192,7 @@ String that separated by comma or list of string."
 
 (defun languagetool--write-debug-info (text)
   "Writes to `languagetool-output-buffer-name' the debug
-  information."
+information."
   (let ((current-string " ----- LanguageTool Command:"))
     (put-text-property 0 (length current-string) 'face 'font-lock-warning-face
                        current-string)
@@ -311,7 +312,7 @@ String that separated by comma or list of string."
 
 ;;;###autoload
 (defun languagetool-clear-buffer ()
-  "Deletes all buffer corrections hightlights."
+  "Deletes all buffer correction hightlights."
   (interactive)
   (languagetool--clear-buffer)
   (message "Cleaned buffer from LanguageTool."))
@@ -358,7 +359,7 @@ information."
 ;; Correction functions:
 
 (defun languagetool--parse-correction-message (overlay)
-  "Parse and style minibuffer correction to output."
+  "Parse and style minibuffer correction."
   (let (msg)
     (setq msg (concat
                "[" (cdr (assoc 'id (overlay-get overlay 'languagetool-rule))) "] "))
@@ -369,14 +370,18 @@ information."
         (setq msg (concat msg current-string "\n")))
     (let ((replacements (languagetool--get-replacements overlay)))
       (when (< 0 (length replacements))
-        (setq msg (concat msg "\n"))
-        (dotimes (index (length replacements))
-          (let ((current-string (format "%c" (aref languagetool--correction-keys index))))
-            (put-text-property 0 (length current-string)
-                               'face 'font-lock-keyword-face
+        (let ((num-choices (length replacements)))
+          (when (> (length replacements) (length languagetool--correction-keys))
+            (setq num-choices (length languagetool--correction-keys))
+            (setq msg (concat msg "Not all choices shown.\n")))
+          (setq msg (concat msg "\n"))
+          (dotimes (index num-choices)
+            (let ((current-string (format "%c" (aref languagetool--correction-keys index))))
+              (put-text-property 0 (length current-string)
+                                 'face 'font-lock-keyword-face
                              current-string)
-            (setq msg (concat msg "[" current-string "]: ")))
-          (setq msg (concat msg (nth index replacements) "  ")))))
+              (setq msg (concat msg "[" current-string "]: ")))
+            (setq msg (concat msg (nth index replacements) "  "))))))
     (let ((current-string "C-i"))
       (put-text-property 0 (length current-string)
                          'face 'font-lock-keyword-face
@@ -390,7 +395,7 @@ information."
     msg))
 
 (defun languagetool--do-correction (pressed-key overlay)
-  "Correct an deletes the overlay with LanguageTool Sugestion."
+  "Correct an deletes the overlay with LanguageTool Suggestion."
   (cond
    ((char-equal ?\C-i pressed-key)
     (progn
@@ -398,6 +403,8 @@ information."
       (delete-overlay overlay)))
    ((char-equal ?\C-s pressed-key)
     (goto-char (overlay-end overlay)))
+   ((not (cl-position pressed-key languagetool--correction-keys))
+    (error "Key `%c' cannot be used." pressed-key))
    (t
     (let ((size (length (languagetool--get-replacements overlay)))
           (pos (cl-position pressed-key languagetool--correction-keys)))
