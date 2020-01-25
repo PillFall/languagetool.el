@@ -133,24 +133,24 @@ List of strings.")
   "Return java arguments list.
 Return java arguments as a list of strings which will be used
 when correcting."
-  (let ((command '()))
+  (let ((arguments nil))
     (dolist (arg languagetool-java-arguments)
       (when (stringp arg)
-        (add-to-ordered-list 'command arg)))
-    (add-to-ordered-list 'command "-jar")
-    (add-to-ordered-list 'command languagetool-language-tool-jar)
-    (add-to-ordered-list 'command "-c")
-    (add-to-ordered-list 'command "utf8")
-    (add-to-ordered-list 'command "--json")
+        (setq arguments (append arguments (list arg)))))
+    (setq arguments (append arguments '("-jar")))
+    (setq arguments (append arguments (list languagetool-language-tool-jar)))
+    (setq arguments (append arguments '("-c")))
+    (setq arguments (append arguments '("utf8")))
+    (setq arguments (append arguments '("--json")))
     (when (stringp languagetool-default-language)
       (if (string= languagetool-default-language "auto")
-          (add-to-ordered-list 'command "-adl")
+          (setq arguments (append arguments '("-adl")))
         (progn
-          (add-to-ordered-list 'command "-l")
-          (add-to-ordered-list 'command languagetool-default-language))))
+          (setq arguments (append arguments '("-l")))
+          (setq arguments (append arguments (list languagetool-default-language))))))
     (when (stringp languagetool-mother-tongue)
-      (add-to-ordered-list 'command "-m")
-      (add-to-ordered-list 'command languagetool-mother-tongue))
+      (setq arguments (append arguments '("-m")))
+      (setq arguments (append arguments (list languagetool-mother-tongue))))
     (let ((rules "")
           (rules-first t))
       (dolist (rule languagetool-disabled-rules)
@@ -168,9 +168,10 @@ when correcting."
                 (setq rules-first nil))
             (setq rules (concat rules "," rule)))))
       (unless (string= rules "")
-        (add-to-ordered-list 'command "-d")
-        (add-to-ordered-list 'command rules)))
-    (reverse command)))
+        (setq arguments (append arguments '("-d")))
+        (setq arguments (append arguments (list rules)))))
+    arguments))
+
 
 (defun languagetool--create-overlay (begin end correction)
   "Create an overlay face for corrections.
@@ -268,12 +269,11 @@ The region is delimited by `BEGIN' and `END'."
 (defun languagetool--get-replacements (overlay)
   "Return the replacements of `OVERLAY' in a list."
   (let ((replacements (overlay-get overlay 'languagetool-replacements))
-        (list-replace '()))
+        (replace '()))
     (dotimes (index (length replacements))
-      (add-to-ordered-list
-       'list-replace
-       (cdr (assoc 'value (aref replacements index)))))
-    (reverse list-replace)))
+      (setq replace (append replace
+       (list (cdr (assoc 'value (aref replacements index)))))))
+    replace))
 
 (defun languagetool--show-corrections (begin)
   "Highlight corrections in the buffer.
