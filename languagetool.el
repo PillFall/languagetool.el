@@ -4,6 +4,7 @@
 
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools
+;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "25.1"))
 
