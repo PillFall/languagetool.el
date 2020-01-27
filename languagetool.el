@@ -71,7 +71,7 @@ recomends to use:
 
 (defcustom languagetool-default-language "auto"
   "Language name which LanguageTool will set for correction.
-This is string which indicate locale or `auto'."
+This is string which indicate locale or \"auto\"."
   :group 'languagetool
   :type '(choice
           string
@@ -113,6 +113,41 @@ List of strings."
       ?u ?v ?w ?x ?y ?z])
 
 (defvar languagetool-output-buffer-name "*LanguageTool Output*")
+
+(defcustom languagetool-hint-function
+  'languagetool-hint-default-function
+  "Display error information in the minibuffer.
+The function must search for overlays at point.
+You must pass the function symbol.
+
+A example hint function:
+\(defun `languagetool-hint-default-function' ()
+  \"Default hint display function.\"
+  (dolist (ov (overlays-at (point)))
+    (when (overlay-get ov 'languagetool-message)
+      (unless (current-message)
+        (message
+         \"%s%s\" (overlay-get ov 'languagetool-short-message)
+         (if (/= 0
+                 (length (overlay-get ov 'languagetool-replacements)))
+             (concat
+              \" -> (\"
+              (mapconcat
+               'identity (languagetool--get-replacements ov) \", \")
+              \")\")
+           \"\"))))))"
+  :group 'languagetool
+  :type '(choice
+          (const nil)
+          function))
+
+(defcustom languagetool-hint-idle-delay 0.5
+  "Number of seconds while idle to wait before showing hint."
+  :group 'languagetool
+  :type 'number)
+
+(defvar languagetool-hint--timer nil
+  "Hold idle timer watch every LanguageTool processed buffer.")
 
 
 ;; Local Variables:
@@ -177,7 +212,7 @@ when correcting."
 (defun languagetool--create-overlay (begin end correction)
   "Create an overlay face for corrections.
 Create an overlay for correction in the region delimited by
-`BEGIN' and `END', parsing `CORRECTION' as overlay properties."
+BEGIN and END, parsing CORRECTION as overlay properties."
   (save-excursion
     (let ((ov (make-overlay begin end))
           (short-message (cdr (assoc 'shortMessage correction)))
@@ -199,9 +234,9 @@ Create an overlay for correction in the region delimited by
 ;; Output and debug functions:
 
 (defun languagetool--write-debug-info (text)
-  "Write `TEXT' in `LANGUAGETOOL-OUTPUT-BUFFER-NAME'.
-Write and format `TEXT' and debug information in the buffer with
-name `LANGUAGETOOL-OUTPUT-BUFFER-NAME'."
+  "Write TEXT in `languagetool-output-buffer-name'.
+Write and format TEXT and debug information in the buffer with
+name `languagetool-output-buffer-name'."
   (let ((current-string " ----- LanguageTool Command:"))
     (put-text-property 0 (length current-string) 'face 'font-lock-warning-face
                        current-string)
@@ -224,7 +259,7 @@ name `LANGUAGETOOL-OUTPUT-BUFFER-NAME'."
 
 (defun languagetool--invoke-command-region (begin end)
   "Invoke LanguageTool passing the current region to STDIN.
-The region is delimited by `BEGIN' and `END'."
+The region is delimited by BEGIN and END."
   (languagetool--clear-buffer)
   (unless (executable-find languagetool-java-bin)
     (error "Java could not be found"))
@@ -241,7 +276,7 @@ The region is delimited by `BEGIN' and `END'."
           (erase-buffer)
           (languagetool--write-debug-info text))
       (setq status
-            (apply 'call-process-region begin end
+            (apply #'call-process-region begin end
                    languagetool-java-bin
                    nil
                    languagetool-output-buffer-name
@@ -268,7 +303,7 @@ The region is delimited by `BEGIN' and `END'."
     nil))
 
 (defun languagetool--get-replacements (overlay)
-  "Return the replacements of `OVERLAY' in a list."
+  "Return the replacements of OVERLAY in a list."
   (let ((replacements (overlay-get overlay 'languagetool-replacements))
         (replace '()))
     (dotimes (index (length replacements))
@@ -278,7 +313,7 @@ The region is delimited by `BEGIN' and `END'."
 
 (defun languagetool--show-corrections (begin)
   "Highlight corrections in the buffer.
-Start highlighting in the region delimited by `BEGIN'."
+Start highlighting in the region delimited by BEGIN."
   (let ((corrections (cdr (assoc 'matches languagetool-output-parsed)))
         (correction nil))
     (dotimes (index (length corrections))
@@ -309,7 +344,7 @@ Start highlighting in the region delimited by `BEGIN'."
   "Correct the current buffer and highlight errors.
 If region is selected before calling this function it would be
 pased as argument.
-The region is delimited by `BEGIN' and `END'"
+The region is delimited by BEGIN and END"
   (interactive
    (if (region-active-p)
        (list (region-beginning) (region-end))
@@ -332,48 +367,13 @@ The region is delimited by `BEGIN' and `END'"
 
 ;;;###autoload
 (defun languagetool-set-language (lang)
-  "Change LanguageTool correction language."
+  "Change LanguageTool correction language to LANG."
   (interactive
    (list (read-string "Language: " nil nil 'auto)))
   (setq languagetool-default-language lang))
 
 
 ;; Hint Message:
-
-(defcustom languagetool-hint-function
-  'languagetool-hint-default-function
-  "Display error information in the minibuffer.
-The function must search for overlays at point.
-You must pass the function symbol.
-
-A example hint function:
-\(defun `languagetool-hint-default-function' ()
-  \"Default hint display function.\"
-  (dolist (ov (overlays-at (point)))
-    (when (overlay-get ov 'languagetool-message)
-      (unless (current-message)
-        (message
-         \"%s%s\" (overlay-get ov 'languagetool-short-message)
-         (if (/= 0
-                 (length (overlay-get ov 'languagetool-replacements)))
-             (concat
-              \" -> (\"
-              (mapconcat
-               'identity (languagetool--get-replacements ov) \", \")
-              \")\")
-           \"\"))))))"
-  :group 'languagetool
-  :type '(choice
-          (const nil)
-          function))
-
-(defcustom languagetool-hint-idle-delay 0.5
-  "Number of seconds while idle to wait before showing hint."
-  :group 'languagetool
-  :type 'number)
-
-(defvar languagetool-hint--timer nil
-  "Hold idle timer watch every LanguageTool processed buffer.")
 
 (defun languagetool-hint-default-function ()
   "Default hint display function."
