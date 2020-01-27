@@ -396,7 +396,7 @@ The region is delimited by BEGIN and END"
 
 (defun languagetool--parse-correction-message (overlay)
   "Parse and style minibuffer correction.
-Get the information about corrections from the argument `OVERLAY'."
+Get the information about corrections from the argument OVERLAY."
   (let (msg)
     (setq msg (concat
                "[" (cdr (assoc 'id (overlay-get overlay 'languagetool-rule))) "] "))
@@ -433,8 +433,8 @@ Get the information about corrections from the argument `OVERLAY'."
 
 (defun languagetool--do-correction (pressed-key overlay)
   "Correct an delete the overlay with LanguageTool Suggestion.
-The selected correction is given by `PRESSED-KEY' and the
-position, and suggestions are given by `OVERLAY'"
+The selected correction is given by PRESSED-KEY and the
+position, and suggestions are given by OVERLAY."
   (cond
    ((char-equal ?\C-i pressed-key)
     (progn
