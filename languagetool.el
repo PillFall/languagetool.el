@@ -53,21 +53,28 @@
   :type 'file)
 
 (defcustom languagetool-java-arguments nil
-  "List of string which is passed to java command as arguments.
+  "List of string passed to java command as arguments.
 
 Described at http://wiki.languagetool.org/command-line-options,
 recomends to use:
 
-\(setq `langtool-java-user-arguments' '(\"-Dfile.encoding=UTF-8\"))"
+\(setq `langtool-java-arguments' '(\"-Dfile.encoding=UTF-8\"))"
   :group 'languagetool
   :type '(choice
-          (repeat string)
-          function))
+          (list string)))
 
 (defcustom languagetool-language-tool-jar nil
   "Absolute path to LanguageTool command line jar file."
   :group 'languagetool
   :type 'file)
+
+(defcustom languagetool-language-tool-arguments nil
+  "List of string passed to LanguagetTool jar as argument.
+
+More info at http://wiki.languagetool.org/command-line-options"
+  :group 'languagetool
+  :type '(choice
+          (list string)))
 
 (defcustom languagetool-default-language "auto"
   "Language name which LanguageTool will set for correction.
@@ -175,6 +182,9 @@ when correcting."
         (setq arguments (append arguments (list arg)))))
     (setq arguments (append arguments '("-jar")))
     (setq arguments (append arguments (list languagetool-language-tool-jar)))
+    (dolist (arg languagetool-language-tool-arguments)
+      (when (stringp arg)
+        (setq arguments (append arguments (list arg)))))
     (setq arguments (append arguments '("-c")))
     (setq arguments (append arguments '("utf8")))
     (setq arguments (append arguments '("--json")))
@@ -275,30 +285,30 @@ The region is delimited by BEGIN and END."
           (set-buffer buffer)
           (erase-buffer)
           (languagetool--write-debug-info text))
-      (setq status
-            (apply #'call-process-region begin end
-                   languagetool-java-bin
-                   nil
-                   languagetool-output-buffer-name
-                   nil
-                   (languagetool--parse-java-arguments)))
-      (when (/= status 0)
-        (error "LanguageTool returned with status %d" status)))
-    (let ((buffer (get-buffer languagetool-output-buffer-name))
-          (json-parsed nil))
-      (save-current-buffer
-        (set-buffer buffer)
-        (widen)
-        (goto-char (point-max))
-        (backward-sexp)
-        (setq json-parsed (json-read)))
-      (setq languagetool-output-parsed json-parsed))))
+        (setq status
+              (apply #'call-process-region begin end
+                     languagetool-java-bin
+                     nil
+                     languagetool-output-buffer-name
+                     nil
+                     (languagetool--parse-java-arguments)))
+        (when (/= status 0)
+          (error "LanguageTool returned with status %d" status)))
+      (let ((buffer (get-buffer languagetool-output-buffer-name))
+            (json-parsed nil))
+        (save-current-buffer
+          (set-buffer buffer)
+          (widen)
+          (goto-char (point-max))
+          (backward-sexp)
+          (setq json-parsed (json-read)))
+        (setq languagetool-output-parsed json-parsed))))
   (pop-mark))
 
 (defun languagetool--check-corrections-p ()
   "Return t if corrections can be made or nil otherwise."
   (if (/= 0
-         (length (cdr (assoc 'matches languagetool-output-parsed))))
+          (length (cdr (assoc 'matches languagetool-output-parsed))))
       t
     nil))
 
@@ -308,7 +318,7 @@ The region is delimited by BEGIN and END."
         (replace '()))
     (dotimes (index (length replacements))
       (setq replace (append replace
-       (list (cdr (assoc 'value (aref replacements index)))))))
+                            (list (cdr (assoc 'value (aref replacements index)))))))
     replace))
 
 (defun languagetool--show-corrections (begin)
@@ -401,10 +411,10 @@ Get the information about corrections from the argument OVERLAY."
     (setq msg (concat
                "[" (cdr (assoc 'id (overlay-get overlay 'languagetool-rule))) "] "))
     (let ((current-string (format "%s" (overlay-get overlay 'languagetool-message))))
-        (put-text-property 0 (length current-string)
-                           'face 'font-lock-warning-face
-                           current-string)
-        (setq msg (concat msg current-string "\n")))
+      (put-text-property 0 (length current-string)
+                         'face 'font-lock-warning-face
+                         current-string)
+      (setq msg (concat msg current-string "\n")))
     (let ((replacements (languagetool--get-replacements overlay)))
       (when (< 0 (length replacements))
         (let ((num-choices (length replacements)))
@@ -416,7 +426,7 @@ Get the information about corrections from the argument OVERLAY."
             (let ((current-string (format "%c" (aref languagetool--correction-keys index))))
               (put-text-property 0 (length current-string)
                                  'face 'font-lock-keyword-face
-                             current-string)
+                                 current-string)
               (setq msg (concat msg "[" current-string "]: ")))
             (setq msg (concat msg (nth index replacements) "  "))))))
     (let ((current-string "C-i"))
