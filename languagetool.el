@@ -31,17 +31,17 @@
 (require 'json)
 
 (defgroup languagetool nil
-  "Customize LanguageTool"
+  "LanguageTool's customization group."
   :prefix "languagetool-"
   :group 'applications)
 
 ;; Faces:
 
 (defface languagetool-correction-face
-  '((((class mono)) (:inverse-video t :bold t :underline t))
+  '((((class mono)) (:inverse-video t :underline t))
     (((class color)) (:background "red" :foreground "yellow"))
     (t (:bold t)))
-  "Face used to visualize where the error is."
+  "Face apply to errors."
   :group 'languagetool)
 
 
@@ -220,7 +220,7 @@ when correcting."
 
 
 (defun languagetool--create-overlay (begin end correction)
-  "Create an overlay face for corrections.
+  "Create an overlay for corrections.
 Create an overlay for correction in the region delimited by
 BEGIN and END, parsing CORRECTION as overlay properties."
   (save-excursion
@@ -244,15 +244,16 @@ BEGIN and END, parsing CORRECTION as overlay properties."
 ;; Output and debug functions:
 
 (defun languagetool--write-debug-info (text)
-  "Write TEXT in `languagetool-output-buffer-name'.
-Write and format TEXT and debug information in the buffer with
-name `languagetool-output-buffer-name'."
+  "Write debug info in `languagetool-output-buffer-name'.
+
+The argument TEXT is the region passed to LanguageTool for
+checking."
   (let ((current-string " ----- LanguageTool Command:"))
     (put-text-property 0 (length current-string) 'face 'font-lock-warning-face
                        current-string)
     (insert current-string "\n\n"))
   (insert languagetool-java-bin " "
-          (mapconcat (lambda (x) (format "%s" x))(languagetool--parse-java-arguments) " ")
+          (mapconcat (lambda (x) (format "%s" x)) (languagetool--parse-java-arguments) " ")
           "\n\n\n\n")
   (let ((current-string " ----- LanguageTool Text:"))
     (put-text-property 0 (length current-string) 'face 'font-lock-warning-face
@@ -269,6 +270,7 @@ name `languagetool-output-buffer-name'."
 
 (defun languagetool--invoke-command-region (begin end)
   "Invoke LanguageTool passing the current region to STDIN.
+
 The region is delimited by BEGIN and END."
   (languagetool--clear-buffer)
   (unless (executable-find languagetool-java-bin)
@@ -323,7 +325,8 @@ The region is delimited by BEGIN and END."
 
 (defun languagetool--show-corrections (begin)
   "Highlight corrections in the buffer.
-Start highlighting in the region delimited by BEGIN."
+
+BEGIN defines the start of the current region."
   (let ((corrections (cdr (assoc 'matches languagetool-output-parsed)))
         (correction nil))
     (dotimes (index (length corrections))
@@ -352,6 +355,7 @@ Start highlighting in the region delimited by BEGIN."
 ;;;###autoload
 (defun languagetool-check (begin end)
   "Correct the current buffer and highlight errors.
+
 If region is selected before calling this function it would be
 pased as argument.
 The region is delimited by BEGIN and END"
@@ -406,7 +410,8 @@ The region is delimited by BEGIN and END"
 
 (defun languagetool--parse-correction-message (overlay)
   "Parse and style minibuffer correction.
-Get the information about corrections from the argument OVERLAY."
+
+Get the information about corrections from OVERLAY."
   (let (msg)
     (setq msg (concat
                "[" (cdr (assoc 'id (overlay-get overlay 'languagetool-rule))) "] "))
@@ -486,7 +491,8 @@ position, and suggestions are given by OVERLAY."
   (interactive)
   (save-excursion
     (dolist (ov (reverse (overlays-in (point-min) (point-max))))
-      (when (overlay-get ov 'languagetool-message)
+      (when (and (overlay-get ov 'languagetool-message)
+                 (overlay-start ov))
         (goto-char (overlay-start ov))
         (languagetool--correct-point)))))
 

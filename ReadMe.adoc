@@ -33,12 +33,12 @@ is the `languagetool-commandline.jar` file in your `.emacs` file like:
 
 Or via customize.  It's preferred to use full path instead.
 
-It's recomended to add a Java flag to process the files in UTF-8, so
+It's recommended to add a Java flag to process the files in UTF-8, so
 you should add to your `.emacs`:
 
 [source,lisp]
 ----
-(setq languagetool-java-arguments '("Dfile.encoding=UTF-8"))
+(setq languagetool-java-arguments '("-Dfile.encoding=UTF-8"))
 ----
 
 And finally you should tell which language are you using by default in
@@ -79,7 +79,7 @@ correction buffer at the minibuffer, you only need to choose.
 For this package there is a few customizable variables that should be
 set in order to take control of LanguageTool suggestions.
 
-- `languagetool-java-bin` Sets the path to the java executable, if it
+- `languagetool-java-bin` Sets the path to the JAVA executable, if it
   is in `PATH` only it's name is needed.
 - `languagetool-java-arguments` If you need to pass arguments to JAVA
   set this variable.  It must be a list of strings, one string for
@@ -108,7 +108,7 @@ e.g.
 (setq languagetool-language-tool-arguments '("-flag" "argumentforflag")
 ----
 - `languagetool-default-language` Sets the LanguageTool correction
-  language.  It can be changed via commmands with
+  language.  It can be changed via command with
   `languagetool-set-language`.
 - `languagetool-mother-tongue` If set LanguageTool behaviour change to
   correct using `languagetool-default-language` but being aware of
