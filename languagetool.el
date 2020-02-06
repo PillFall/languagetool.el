@@ -124,6 +124,7 @@ List of strings."
 (defcustom languagetool-hint-function
   'languagetool-hint-default-function
   "Display error information in the minibuffer.
+
 The function must search for overlays at point.
 You must pass the function symbol.
 
@@ -140,7 +141,7 @@ A example hint function:
              (concat
               \" -> (\"
               (mapconcat
-               'identity (languagetool--get-replacements ov) \", \")
+               #'identity (languagetool--get-replacements ov) \", \")
               \")\")
            \"\"))))))"
   :group 'languagetool
@@ -401,7 +402,7 @@ The region is delimited by BEGIN and END"
              (concat
               " -> ("
               (mapconcat
-               'identity (languagetool--get-replacements ov) ", ")
+               #'identity (languagetool--get-replacements ov) ", ")
               ")")
            ""))))))
 
