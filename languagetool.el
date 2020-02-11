@@ -441,7 +441,7 @@ Get the information about corrections from OVERLAY."
       (put-text-property 0 (length current-string)
                          'face 'font-lock-keyword-face
                          current-string)
-      (setq msg (concat msg "[" current-string "]: Skip")))
+      (setq msg (concat msg "[" current-string "]: Skip\n")))
     msg))
 
 (defun languagetool--do-correction (pressed-key overlay)

@@ -1,0 +1,21 @@
+= Change Log
+Joar Buitago <jebuitragoc@unal.edu.co>
+v0.1.0, 2020-01-21
+
+All notable changes to this project will be documented in this file.
+
+The format is based on
+link:https://keepachangelog.com/en/1.0.0/[Keep a Changelog],
+and this project adheres to
+link:https://semver.org/spec/v2.0.0.html[Semantic Versioning].
+
+
+
+== [Unreleased]
+
+== [0.1.0]
+=== Added
+- Comunication with LanguageTool.
+- Functions for the user to use.
+- Visual overlay to mark corrections.
+- Correction throught minibuffer.
