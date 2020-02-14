@@ -346,7 +346,6 @@ BEGIN defines the start of the current region."
       (dolist (ov (overlays-in (point-min) (point-max)))
         (when (overlay-get ov 'languagetool-message)
           (delete-overlay ov)))))
-  (run-hooks 'languagetool-finish-hook)
   (when languagetool-hint--timer
     (cancel-timer languagetool-hint--timer)))
 
@@ -364,10 +363,14 @@ The region is delimited by BEGIN and END"
   (languagetool--invoke-command-region begin end)
   (if (languagetool--check-corrections-p)
       (progn
+        (message (substitute-command-keys "LangugeTool finished.
+Use \\[languagetool-correct-buffer] to correct the buffer."))
         (languagetool--show-corrections begin)
         (run-hooks 'languagetool-error-exists-hook))
     (progn
-      (message "LanguageTool finished, found no errors.")
+      (message "LanguageTool finished.
+Found no errors.")
+      (languagetool--clear-buffer)
       (run-hooks 'languagetool-no-error-hook))))
 
 ;;;###autoload
@@ -375,6 +378,7 @@ The region is delimited by BEGIN and END"
   "Deletes all buffer correction hightlights."
   (interactive)
   (languagetool--clear-buffer)
+  (run-hooks 'languagetool-finish-hook)
   (message "Cleaned buffer from LanguageTool."))
 
 ;;;###autoload
@@ -472,6 +476,7 @@ position, and suggestions are given by OVERLAY."
     (let (pressed-key)
       (dolist (ov (overlays-at (point)))
         (when (overlay-get ov 'languagetool-message)
+          (message nil)
           (setq pressed-key
                 (read-char (languagetool--parse-correction-message ov)))
           (languagetool--do-correction pressed-key ov)

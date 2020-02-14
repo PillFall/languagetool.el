@@ -12,6 +12,8 @@ link:https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 
 == [Unreleased]
+=== Fixed
+- Jagged minibuffer message/x
 
 == [0.1.0]
 === Added
