@@ -12,8 +12,11 @@ link:https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 
 == [Unreleased]
+=== Added
+- Support for "Real time" check with LanguageTool server.
+
 === Fixed
-- Jagged minibuffer message/x
+- Jagged minibuffer message
 
 == [0.1.0]
 === Added
