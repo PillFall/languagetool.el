@@ -44,7 +44,6 @@
   "Face apply to errors."
   :group 'languagetool)
 
-
 ;; Custom Variables:
 
 (defcustom languagetool-java-bin "java"
@@ -124,6 +123,7 @@ List of strings."
 (defcustom languagetool-hint-function
   'languagetool-hint-default-function
   "Display error information in the minibuffer.
+
 The function must search for overlays at point.
 You must pass the function symbol.
 
@@ -140,7 +140,7 @@ A example hint function:
              (concat
               \" -> (\"
               (mapconcat
-               'identity (languagetool--get-replacements ov) \", \")
+               #'identity (languagetool--get-replacements ov) \", \")
               \")\")
            \"\"))))))"
   :group 'languagetool
@@ -155,7 +155,6 @@ A example hint function:
 
 (defvar languagetool-hint--timer nil
   "Hold idle timer watch every LanguageTool processed buffer.")
-
 
 ;; Local Variables:
 
@@ -174,6 +173,7 @@ List of strings.")
 
 (defun languagetool--parse-java-arguments ()
   "Return java arguments list.
+
 Return java arguments as a list of strings which will be used
 when correcting."
   (let ((arguments nil))
@@ -221,8 +221,9 @@ when correcting."
 
 (defun languagetool--create-overlay (begin end correction)
   "Create an overlay for corrections.
-Create an overlay for correction in the region delimited by
-BEGIN and END, parsing CORRECTION as overlay properties."
+
+Create an overlay for correction in the region delimited by BEGIN
+and END, parsing CORRECTION as overlay properties."
   (save-excursion
     (let ((ov (make-overlay begin end))
           (short-message (cdr (assoc 'shortMessage correction)))
@@ -280,31 +281,28 @@ The region is delimited by BEGIN and END."
   (unless (file-readable-p languagetool-language-tool-jar)
     (error "LanguageTool jar is not readable or could not be found"))
   (save-excursion
-    (let ((status 0))
-      (let ((buffer (get-buffer-create languagetool-output-buffer-name))
-            (text (buffer-substring-no-properties begin end)))
-        (save-current-buffer
-          (set-buffer buffer)
-          (erase-buffer)
-          (languagetool--write-debug-info text))
-        (setq status
-              (apply #'call-process-region begin end
-                     languagetool-java-bin
-                     nil
-                     languagetool-output-buffer-name
-                     nil
-                     (languagetool--parse-java-arguments)))
-        (when (/= status 0)
-          (error "LanguageTool returned with status %d" status)))
-      (let ((buffer (get-buffer languagetool-output-buffer-name))
-            (json-parsed nil))
-        (save-current-buffer
-          (set-buffer buffer)
-          (widen)
-          (goto-char (point-max))
-          (backward-sexp)
-          (setq json-parsed (json-read)))
-        (setq languagetool-output-parsed json-parsed))))
+    (let ((status 0)
+          (buffer (get-buffer-create languagetool-output-buffer-name))
+          (text (buffer-substring-no-properties begin end))
+          (json-parsed nil))
+      (with-current-buffer buffer
+        (erase-buffer)
+        (languagetool--write-debug-info text))
+      (setq status
+            (apply #'call-process-region begin end
+                   languagetool-java-bin
+                   nil
+                   languagetool-output-buffer-name
+                   nil
+                   (languagetool--parse-java-arguments)))
+      (when (/= status 0)
+        (error "LanguageTool returned with status %d" status))
+      (with-current-buffer buffer
+        (widen)
+        (goto-char (point-max))
+        (backward-sexp)
+        (setq json-parsed (json-read)))
+      (setq languagetool-output-parsed json-parsed)))
   (pop-mark))
 
 (defun languagetool--check-corrections-p ()
@@ -401,7 +399,7 @@ The region is delimited by BEGIN and END"
              (concat
               " -> ("
               (mapconcat
-               'identity (languagetool--get-replacements ov) ", ")
+               #'identity (languagetool--get-replacements ov) ", ")
               ")")
            ""))))))
 
@@ -443,7 +441,7 @@ Get the information about corrections from OVERLAY."
       (put-text-property 0 (length current-string)
                          'face 'font-lock-keyword-face
                          current-string)
-      (setq msg (concat msg "[" current-string "]: Skip")))
+      (setq msg (concat msg "[" current-string "]: Skip\n")))
     msg))
 
 (defun languagetool--do-correction (pressed-key overlay)
@@ -476,8 +474,8 @@ position, and suggestions are given by OVERLAY."
         (when (overlay-get ov 'languagetool-message)
           (setq pressed-key
                 (read-char (languagetool--parse-correction-message ov)))
-          (languagetool--do-correction pressed-key ov))))
-    (throw 'languagetool-correction nil)))
+          (languagetool--do-correction pressed-key ov)
+          (throw 'languagetool-correction nil))))))
 
 ;;;###autoload
 (defun languagetool-correct-at-point ()
