@@ -1,6 +1,6 @@
 = Change Log
 Joar Buitago <jebuitragoc@unal.edu.co>
-v0.1.1, 2020-01-21
+v0.1.2, 2020-01-21
 
 All notable changes to this project will be documented in this file.
 
@@ -17,6 +17,10 @@ link:https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 === Fixed
 - Jagged minibuffer message
+
+== [0.1.2]
+=== Fixed
+- Correction fails if language is set.
 
 == [0.1.1]
 === Fixed
