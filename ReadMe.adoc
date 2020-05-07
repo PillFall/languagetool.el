@@ -2,6 +2,12 @@
 Joar Buitago <jebuitragoc@unal.edu.co>
 v0.1.2, 2020-01-21
 
+[.text-center]
+--
+link:https://melpa.org/\#/languagetool[image:https://melpa.org/packages/languagetool-badge.svg[melpa]]
+link:https://stable.melpa.org/\#/languagetool[image:https://stable.melpa.org/packages/languagetool-badge.svg[MELPA Stable]]
+--
+
 Use LanguageTool as your Emacs grammar and spelling corrector.
 
 This package was based on
@@ -28,7 +34,7 @@ is the `languagetool-commandline.jar` file in your `.emacs` file like:
 [source,lisp]
 ----
 (setq languagetool-language-tool-jar
-      "~/.languagetool/languagetool-command-line-jar")
+      "~/.languagetool/languagetool-commandline-jar")
 ----
 
 Or via customize.  It's preferred to use full path instead.
@@ -76,7 +82,7 @@ correction buffer at the minibuffer, you only need to choose.
 
 == Customizable Variables
 
-For this package there is a few customizable variables that should be
+For this package there are a few customizable variables that should be
 set in order to take control of LanguageTool suggestions.
 
 - `languagetool-java-bin` Sets the path to the JAVA executable, if it

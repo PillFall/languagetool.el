@@ -1,4 +1,4 @@
-;;; languagetool.el ---  LanguageTool integration for grammar check -*- lexical-binding: t; -*-
+;;; languagetool.el --- LanguageTool integration for grammar check -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020  Joar Buitrago
 
@@ -19,14 +19,16 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
-;; Correct te buffer or region with LanguageTool and show its
-;; suggestions in the buffer
+;; Correct the buffer or region with LanguageTool and show its
+;; suggestions in the buffer.
 
 ;;; Code:
+
+(eval-and-compile (require 'languagetool-issue-faces))
 
 (require 'json)
 (require 'url)
@@ -35,15 +37,6 @@
   "LanguageTool's customization group."
   :prefix "languagetool-"
   :group 'applications)
-
-;; Faces:
-
-(defface languagetool-correction-face
-  '((((class mono)) (:inverse-video t :underline t))
-    (((class color)) (:background "red" :foreground "yellow"))
-    (t (:bold t)))
-  "Face apply to errors."
-  :group 'languagetool)
 
 ;; Custom Variables:
 
@@ -56,7 +49,7 @@
   "List of string passed to java command as arguments.
 
 Described at http://wiki.languagetool.org/command-line-options,
-recomends to use:
+recommends to use:
 
 \(setq `langtool-java-arguments' '(\"-Dfile.encoding=UTF-8\"))"
   :group 'languagetool
@@ -68,23 +61,8 @@ recomends to use:
   :group 'languagetool
   :type 'file)
 
-(defcustom languagetool-server-mode-jar nil
-  "Absolute path to LanguageTool server jar file."
-  :group 'languagetool
-  :type 'file)
-
-(defcustom languagetool-server-mode-port 8081
-  "Port to the connection with LanguageTool server."
-  :group 'languagetool
-  :type 'number)
-
-(defcustom languagetool-server-mode-url "http://localhost:8081/v2/check"
-  "URL to connect with LanguageTool."
-  :group 'languagetool
-  :type 'string)
-
 (defcustom languagetool-language-tool-arguments nil
-  "List of string passed to LanguagetTool jar as argument.
+  "List of string passed to LanguageTool jar as argument.
 
 More info at http://wiki.languagetool.org/command-line-options"
   :group 'languagetool
@@ -136,8 +114,6 @@ List of strings."
 
 (defvar languagetool-output-buffer-name "*LanguageTool Output*")
 
-(defvar languagetool-server-mode-output-buffer-name "*LanguageTool Server Output*")
-
 (defcustom languagetool-hint-function
   'languagetool-hint-default-function
   "Display error information in the minibuffer.
@@ -171,24 +147,8 @@ A example hint function:
   :group 'languagetool
   :type 'number)
 
-(defcustom languagetool-server-mode-idle-delay 0.1
-  "Number of seconds while idle to wait before calling the server again."
-  :group 'languagetool
-  :type 'number)
-
 (defvar languagetool-hint--timer nil
   "Hold idle timer watch every LanguageTool processed buffer.")
-
-(defvar languagetool-server-mode-server nil
-  "Hold the proccess within Emacs.")
-
-(defvar languagetool-server-mode-quantity 0
-  "Hold the number of buffers with LT server mode activated.")
-
-(defvar languagetool-server-mode-output-parsed nil)
-
-(defvar languagetool-server-mode--timer nil
-  "Hold idle timer for the LanguageTool Server.")
 
 ;; Local Variables:
 
@@ -202,137 +162,6 @@ List of strings.")
 
 
 ;; Functions:
-
-;; Minor mode Functions:
-
-;;;###autoload
-(define-minor-mode languagetool-server-mode
-  "Init LanguageTool in server mode.
-
-Launches a LanguageTool server and use it as the correction
-backend."
-  :lighter " LT"
-  :group 'languagetool
-
-  (if languagetool-server-mode
-      (languagetool-server-mode--start-mode)
-    (languagetool-server-mode--close-mode)))
-
-(defun languagetool-server-mode--start-mode ()
-  "Start LanguageTool server mode."
-  (setq languagetool-server-mode-quantity (1+ languagetool-server-mode-quantity))
-  (when (= languagetool-server-mode-quantity 1)
-    (setq languagetool-server-mode-server
-          (start-process "languagetool-server"
-                         "*LanguageTool Server Output*"
-                         languagetool-java-bin
-                         "-cp"
-                         languagetool-server-mode-jar
-                         "org.languagetool.server.HTTPServer"
-                         "--port"
-                         (format "%d" languagetool-server-mode-port)))
-    (setq languagetool-hint--timer
-          (run-with-idle-timer languagetool-hint-idle-delay t
-                               languagetool-hint-function))
-    (setq languagetool-server-mode--timer
-          (run-with-idle-timer languagetool-server-mode-idle-delay t
-                               #'languagetool-server-mode--check))))
-
-(defun languagetool-server-mode--close-mode ()
-  "Close LanguageTool server mode."
-  (setq languagetool-server-mode-quantity (1- languagetool-server-mode-quantity))
-  (when (= languagetool-server-mode-quantity 0)
-    (when languagetool-hint--timer
-      (cancel-timer languagetool-hint--timer))
-    (when languagetool-server-mode--timer
-      (cancel-timer languagetool-server-mode--timer))
-    (when (process-live-p languagetool-server-mode-server)
-      (kill-process languagetool-server-mode-server)))
-  (languagetool--clear-buffer))
-
-(defun languagetool-server-mode--http-post (url args)
-  "Send ARGS to URL as a POST request."
-  (let ((inhibit-message t)
-        (url-request-method "POST")
-        (url-request-extra-headers
-         '(("Content-Type" . "application/x-www-form-urlencoded")))
-        (url-request-data
-         (mapconcat (lambda (arg)
-                      (concat (url-hexify-string (car arg))
-                              "="
-                              (url-hexify-string (cdr arg))))
-                    args
-                    "&")))
-    (url-retrieve url #'languagetool-server-mode--parse-output)))
-
-(defun languagetool-server-mode-parse-arguments ()
-  "Return url arguments as a list."
-  (let ((args nil))
-    (setq args
-          (append args
-                  (list
-                   (cons "text"
-                         (buffer-substring-no-properties (point-min) (point-max))))))
-    (setq args (append args (list (cons "language" languagetool-default-language))))
-    (when (stringp languagetool-mother-tongue)
-      (setq args (append args (list (cons "motherTongue" languagetool-mother-tongue)))))
-    (let ((rules "")
-          (rules-first t))
-      (dolist (rule languagetool-disabled-rules)
-        (when (stringp rule)
-          (if rules-first
-              (progn
-                (setq rules (concat rules rule))
-                (setq rules-first nil))
-            (setq rules (concat rules "," rule)))))
-      (dolist (rule languagetool-local-disabled-rules)
-        (when (stringp rule)
-          (if rules-first
-              (progn
-                (setq rules (concat rules rule))
-                (setq rules-first nil))
-            (setq rules (concat rules "," rule)))))
-      (unless (string= rules "")
-        (setq args (append args (list (cons "disabledRules" rules))))))
-    args))
-
-(defun languagetool-server-mode--check ()
-  "Check the current buffer in the LanguageTool Server."
-  (when languagetool-server-mode
-    (languagetool--clear-buffer)
-    (languagetool-server-mode--http-post
-     languagetool-server-mode-url
-     (languagetool-server-mode-parse-arguments))
-    (languagetool-server-mode--show-corrections)))
-
-(defun languagetool-server-mode--parse-output (status)
-  "Parse the output from LanguageTool server.
-The STATUS arg is the return status of the http request."
-  ;; The current buffer is the http response
-  (message status)
-  (widen)
-  (let ((text (buffer-substring (point-min) (point-max))))
-    (delete-region (point-min) (point-max))
-    (insert (decode-coding-string text 'utf-8)))
-  (goto-char (point-max))
-  (backward-sexp)
-  (setq languagetool-server-mode-output-parsed (json-read)))
-
-(defun languagetool-server-mode--show-corrections ()
-  "Highlight corrections in the buffer."
-  (let ((corrections (cdr (assoc 'matches languagetool-server-mode-output-parsed)))
-        (correction nil))
-    (dotimes (index (length corrections))
-      (setq correction (aref corrections index))
-      (let ((offset (cdr (assoc 'offset correction)))
-            (size (cdr (assoc 'length correction))))
-        (languagetool--create-overlay
-         (+ (point-min) offset) (+ (point-min) offset size)
-         correction))))
-  (setq languagetool-hint--timer
-        (run-with-idle-timer languagetool-hint-idle-delay t
-                             languagetool-hint-function)))
-
 
 ;; Create Functions:
 
@@ -367,6 +196,17 @@ when correcting."
         (setq arguments (append arguments (list "-d" rules)))))
     arguments))
 
+(defun languagetool--get-face (issue-type)
+  "Get the face for the ISSUE-TYPE."
+  (cond
+   ((string= issue-type "misspelling")
+    'languagetool-misspelling-face)
+   ((string= issue-type "grammar")
+    'languagetool-grammar-face)
+   ((string= issue-type "style")
+    'languagetool-style-face)
+   (t
+    'languagetool-default-face)))
 
 (defun languagetool--create-overlay (begin end correction)
   "Create an overlay for corrections.
@@ -374,11 +214,12 @@ when correcting."
 Create an overlay for correction in the region delimited by BEGIN
 and END, parsing CORRECTION as overlay properties."
   (save-excursion
-    (let ((ov (make-overlay begin end))
-          (short-message (cdr (assoc 'shortMessage correction)))
-          (message (cdr (assoc 'message correction)))
-          (replacements (cdr (assoc 'replacements correction)))
-          (rule (cdr (assoc 'rule correction))))
+    (let* ((ov (make-overlay begin end))
+           (short-message (cdr (assoc 'shortMessage correction)))
+           (message (cdr (assoc 'message correction)))
+           (replacements (cdr (assoc 'replacements correction)))
+           (rule (cdr (assoc 'rule correction)))
+           (issue-type (cdr (assoc 'issueType rule))))
       (when (string= short-message "")
         (setq short-message message))
       (overlay-put ov 'languagetool-short-message short-message)
@@ -388,7 +229,7 @@ and END, parsing CORRECTION as overlay properties."
       (overlay-put ov 'help-echo short-message)
       (overlay-put ov 'priority 1)
       (overlay-put ov 'evaporate t)
-      (overlay-put ov 'face 'languagetool-correction-face))))
+      (overlay-put ov 'face (languagetool--get-face issue-type)))))
 
 
 ;; Output and debug functions:
@@ -503,7 +344,7 @@ BEGIN defines the start of the current region."
   "Correct the current buffer and highlight errors.
 
 If region is selected before calling this function it would be
-pased as argument.
+passed as an argument.
 The region is delimited by BEGIN and END"
   (interactive
    (if (region-active-p)
@@ -524,7 +365,7 @@ Found no errors.")
 
 ;;;###autoload
 (defun languagetool-clear-buffer ()
-  "Deletes all buffer correction hightlights."
+  "Deletes all buffer correction highlight."
   (interactive)
   (languagetool--clear-buffer)
   (run-hooks 'languagetool-finish-hook)
@@ -635,35 +476,20 @@ position, and suggestions are given by OVERLAY."
 (defun languagetool-correct-at-point ()
   "Pops up transient buffer to do correction at point."
   (interactive)
-  (when languagetool-server-mode
-    (when languagetool-server-mode--timer
-      (cancel-timer languagetool-server-mode--timer)))
-  (languagetool--correct-point)
-  (when languagetool-server-mode
-    (setq languagetool-server-mode--timer
-          (run-with-idle-timer languagetool-server-mode-idle-delay t
-                               #'languagetool-server-mode--check))
-    (languagetool-server-mode--check)))
+  (languagetool--correct-point))
 
 ;;;###autoload
 (defun languagetool-correct-buffer ()
   "Pops up transient buffer to do corrections at buffer."
   (interactive)
-  (when languagetool-server-mode
-    (when languagetool-server-mode--timer
-      (cancel-timer languagetool-server-mode--timer)))
   (save-excursion
     (dolist (ov (reverse (overlays-in (point-min) (point-max))))
       (when (and (overlay-get ov 'languagetool-message)
                  (overlay-start ov))
         (goto-char (overlay-start ov))
-        (languagetool--correct-point))))
-  (when languagetool-server-mode
-    (setq languagetool-server-mode--timer
-          (run-with-idle-timer languagetool-server-mode-idle-delay t
-                               #'languagetool-server-mode--check))
-    (languagetool-server-mode--check)))
+        (languagetool--correct-point)))))
 
 
 (provide 'languagetool)
+
 ;;; languagetool.el ends here

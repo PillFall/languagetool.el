@@ -13,7 +13,7 @@ link:https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 == [Unreleased]
 === Added
-- Support for "Real time" check with LanguageTool server.
+- Support for different error faces.
 
 === Fixed
 - Jagged minibuffer message
