@@ -1,6 +1,6 @@
 = languagetool.el
 Joar Buitago <jebuitragoc@unal.edu.co>
-v0.1.2, 2020-01-21
+v0.2.0, 2020-01-21
 
 [.text-center]
 --
@@ -16,6 +16,9 @@ Emacs-Langtool], it's intended to make a pipeline through Emacs and
 parse JSON output, making it incompatible with the original version,
 that's why this package is not a forked version and it's made from
 scratch.
+
+LanguageTool is an open source proof-reading tool built in Java which
+supports more than 30 languages.
 
 
 
@@ -55,25 +58,28 @@ your `.emacs` file like:
 (setq languagetool-default-language "en-GB")
 ----
 
+You can change this latter using `languagetool-set-language` function.
+
 
 
 == Usage
 
-There are 5 commands to use, and if you want you can bind they to a key.
+There are 5 commands than can be used directly and bound to a key if
+desired.
 
-- `languagetool-check` To check the active region or the buffer.
-- `languagetool-clear-buffer` To delete all the buffer highlights.
-- `languagetool-correct-at-point` To correct the warning at point.
-- `languagetool-correct-buffer` To correct the whole buffer.
-- `languagetool-set-language` To change correction language.
+* `languagetool-check` To check the active region or the buffer.
+* `languagetool-clear-buffer` To delete all the buffer highlights.
+* `languagetool-correct-at-point` To correct the warning at point.
+* `languagetool-correct-buffer` To correct the whole buffer.
+* `languagetool-set-language` To change correction language.
 
 For this package the suggested keybinding is:
 
-- `(global-set-key "\C-clc" 'languagetool-check)`
-- `(global-set-key "\C-cld" 'languagetool-clear-buffer)`
-- `(global-set-key "\C-clp" 'languagetool-correct-at-point)`
-- `(global-set-key "\C-clb" 'languagetool-correct-buffer)`
-- `(global-set-key "\C-cll" 'languagetool-set-language)`
+* `(global-set-key "\C-clc" 'languagetool-check)`
+* `(global-set-key "\C-cld" 'languagetool-clear-buffer)`
+* `(global-set-key "\C-clp" 'languagetool-correct-at-point)`
+* `(global-set-key "\C-clb" 'languagetool-correct-buffer)`
+* `(global-set-key "\C-cll" 'languagetool-set-language)`
 
 Once you are correcting with build in functions it will pop-up a
 correction buffer at the minibuffer, you only need to choose.
@@ -85,9 +91,9 @@ correction buffer at the minibuffer, you only need to choose.
 For this package there are a few customizable variables that should be
 set in order to take control of LanguageTool suggestions.
 
-- `languagetool-java-bin` Sets the path to the JAVA executable, if it
-  is in `PATH` only it's name is needed.
-- `languagetool-java-arguments` If you need to pass arguments to JAVA
+* `languagetool-java-bin` Sets the path to the JAVA executable, if it
+  is in `PATH` only it's name is needed. Set to `"java"` by default.
+* `languagetool-java-arguments` If you need to pass arguments to JAVA
   set this variable.  It must be a list of strings, one string for
   each argument without spaces.
 +
@@ -99,9 +105,9 @@ e.g.
 ;; or
 (setq languagetool-java-arguments '("-flag" "argumentforflag")
 ----
-- `languagetool-language-tool-jar` Sets the path of the LanguageTool
+* `languagetool-language-tool-jar` Sets the path of the LanguageTool
   command line jar file.  It's recommended to put the full path.
-- `languagetool-language-tool-arguments` Sets arguments to pass to
+* `languagetool-language-tool-arguments` Sets arguments to pass to
   LanguageTool.  It must be a list of strings, one string for each
   argument without spaces.
 +
@@ -113,15 +119,15 @@ e.g.
 ;; or
 (setq languagetool-language-tool-arguments '("-flag" "argumentforflag")
 ----
-- `languagetool-default-language` Sets the LanguageTool correction
+* `languagetool-default-language` Sets the LanguageTool correction
   language.  It can be changed via command with
   `languagetool-set-language`.
-- `languagetool-mother-tongue` If set LanguageTool behaviour change to
+* `languagetool-mother-tongue` If set LanguageTool behaviour change to
   correct using `languagetool-default-language` but being aware of
   false friends.
-- `languagetool-disabled-rules` Tells LanguageTool to ignore these
+* `languagetool-disabled-rules` Tells LanguageTool to ignore these
   rules when checking text.
-- `languagetool-local-disabled-rules` As `languagetool-disabled-rules`
+* `languagetool-local-disabled-rules` As `languagetool-disabled-rules`
   tells LanguageTool to ignore these rules when checking text but it's
   buffer local, so if you want you can set it in your local variables
   comment.
