@@ -1,11 +1,11 @@
-;;; languagetool.el ---  LanguageTool integration for grammar check -*- lexical-binding: t; -*-
+;;; languagetool.el --- LanguageTool integration for grammar check -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020  Joar Buitrago
 
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 0.1.2
+;; Version: 0.2.0
 ;; Package-Requires: ((emacs "25.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -19,30 +19,24 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
-;; Correct te buffer or region with LanguageTool and show its
-;; suggestions in the buffer
+;; Correct the buffer or region with LanguageTool and show its
+;; suggestions in the buffer.
 
 ;;; Code:
 
+(eval-and-compile (require 'languagetool-issue-faces))
+
 (require 'json)
+(require 'url)
 
 (defgroup languagetool nil
   "LanguageTool's customization group."
   :prefix "languagetool-"
   :group 'applications)
-
-;; Faces:
-
-(defface languagetool-correction-face
-  '((((class mono)) (:inverse-video t :underline t))
-    (((class color)) (:background "red" :foreground "yellow"))
-    (t (:bold t)))
-  "Face apply to errors."
-  :group 'languagetool)
 
 ;; Custom Variables:
 
@@ -55,7 +49,7 @@
   "List of string passed to java command as arguments.
 
 Described at http://wiki.languagetool.org/command-line-options,
-recomends to use:
+recommends to use:
 
 \(setq `langtool-java-arguments' '(\"-Dfile.encoding=UTF-8\"))"
   :group 'languagetool
@@ -68,7 +62,7 @@ recomends to use:
   :type 'file)
 
 (defcustom languagetool-language-tool-arguments nil
-  "List of string passed to LanguagetTool jar as argument.
+  "List of string passed to LanguageTool jar as argument.
 
 More info at http://wiki.languagetool.org/command-line-options"
   :group 'languagetool
@@ -202,6 +196,17 @@ when correcting."
         (setq arguments (append arguments (list "-d" rules)))))
     arguments))
 
+(defun languagetool--get-face (issue-type)
+  "Get the face for the ISSUE-TYPE."
+  (cond
+   ((string= issue-type "misspelling")
+    'languagetool-misspelling-face)
+   ((string= issue-type "grammar")
+    'languagetool-grammar-face)
+   ((string= issue-type "style")
+    'languagetool-style-face)
+   (t
+    'languagetool-default-face)))
 
 (defun languagetool--create-overlay (begin end correction)
   "Create an overlay for corrections.
@@ -209,11 +214,12 @@ when correcting."
 Create an overlay for correction in the region delimited by BEGIN
 and END, parsing CORRECTION as overlay properties."
   (save-excursion
-    (let ((ov (make-overlay begin end))
-          (short-message (cdr (assoc 'shortMessage correction)))
-          (message (cdr (assoc 'message correction)))
-          (replacements (cdr (assoc 'replacements correction)))
-          (rule (cdr (assoc 'rule correction))))
+    (let* ((ov (make-overlay begin end))
+           (short-message (cdr (assoc 'shortMessage correction)))
+           (message (cdr (assoc 'message correction)))
+           (replacements (cdr (assoc 'replacements correction)))
+           (rule (cdr (assoc 'rule correction)))
+           (issue-type (cdr (assoc 'issueType rule))))
       (when (string= short-message "")
         (setq short-message message))
       (overlay-put ov 'languagetool-short-message short-message)
@@ -223,7 +229,7 @@ and END, parsing CORRECTION as overlay properties."
       (overlay-put ov 'help-echo short-message)
       (overlay-put ov 'priority 1)
       (overlay-put ov 'evaporate t)
-      (overlay-put ov 'face 'languagetool-correction-face))))
+      (overlay-put ov 'face (languagetool--get-face issue-type)))))
 
 
 ;; Output and debug functions:
@@ -330,7 +336,6 @@ BEGIN defines the start of the current region."
       (dolist (ov (overlays-in (point-min) (point-max)))
         (when (overlay-get ov 'languagetool-message)
           (delete-overlay ov)))))
-  (run-hooks 'languagetool-finish-hook)
   (when languagetool-hint--timer
     (cancel-timer languagetool-hint--timer)))
 
@@ -339,7 +344,7 @@ BEGIN defines the start of the current region."
   "Correct the current buffer and highlight errors.
 
 If region is selected before calling this function it would be
-pased as argument.
+passed as an argument.
 The region is delimited by BEGIN and END"
   (interactive
    (if (region-active-p)
@@ -348,17 +353,22 @@ The region is delimited by BEGIN and END"
   (languagetool--invoke-command-region begin end)
   (if (languagetool--check-corrections-p)
       (progn
+        (message (substitute-command-keys "LangugeTool finished.
+Use \\[languagetool-correct-buffer] to correct the buffer."))
         (languagetool--show-corrections begin)
         (run-hooks 'languagetool-error-exists-hook))
     (progn
-      (message "LanguageTool finished, found no errors.")
+      (message "LanguageTool finished.
+Found no errors.")
+      (languagetool--clear-buffer)
       (run-hooks 'languagetool-no-error-hook))))
 
 ;;;###autoload
 (defun languagetool-clear-buffer ()
-  "Deletes all buffer correction hightlights."
+  "Deletes all buffer correction highlight."
   (interactive)
   (languagetool--clear-buffer)
+  (run-hooks 'languagetool-finish-hook)
   (message "Cleaned buffer from LanguageTool."))
 
 ;;;###autoload
@@ -456,6 +466,7 @@ position, and suggestions are given by OVERLAY."
     (let (pressed-key)
       (dolist (ov (overlays-at (point)))
         (when (overlay-get ov 'languagetool-message)
+          (message nil)
           (setq pressed-key
                 (read-char (languagetool--parse-correction-message ov)))
           (languagetool--do-correction pressed-key ov)
@@ -480,4 +491,5 @@ position, and suggestions are given by OVERLAY."
 
 
 (provide 'languagetool)
+
 ;;; languagetool.el ends here
