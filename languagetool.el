@@ -239,22 +239,15 @@ and END, parsing CORRECTION as overlay properties."
 
 The argument TEXT is the region passed to LanguageTool for
 checking."
-  (let ((current-string " ----- LanguageTool Command:"))
-    (put-text-property 0 (length current-string) 'face 'font-lock-warning-face
-                       current-string)
-    (insert current-string "\n\n"))
+  (insert (propertize " ----- LanguageTool Command:" 'face 'font-lock-warning-face)
+          "\n\n")
   (insert languagetool-java-bin " "
           (mapconcat (lambda (x) (format "%s" x)) (languagetool--parse-java-arguments) " ")
           "\n\n\n\n")
-  (let ((current-string " ----- LanguageTool Text:"))
-    (put-text-property 0 (length current-string) 'face 'font-lock-warning-face
-                       current-string)
-    (insert current-string "\n\n"))
+  (insert (propertize " ----- LanguageTool Text:" 'face 'font-lock-warning-face)
+          "\n\n")
   (insert text "\n\n\n\n")
-  (let ((current-string " ----- LanguageTool Output:"))
-    (put-text-property 0 (length current-string) 'face 'font-lock-warning-face
-                       current-string)
-    (insert current-string "\n\n")))
+  (insert (propertize " ----- LanguageTool Output:" 'face 'font-lock-warning-face) "\n\n"))
 
 
 ;; Correction functions:
@@ -405,37 +398,38 @@ Found no errors.")
 
 Get the information about corrections from OVERLAY."
   (let (msg)
+    ;; Add LanguageTool rule to the message
     (setq msg (concat
                "[" (cdr (assoc 'id (overlay-get overlay 'languagetool-rule))) "] "))
-    (let ((current-string (format "%s" (overlay-get overlay 'languagetool-message))))
-      (put-text-property 0 (length current-string)
-                         'face 'font-lock-warning-face
-                         current-string)
-      (setq msg (concat msg current-string "\n")))
+
+    ;; Add LanguageTool correction suggestion
+    (setq msg (concat msg
+                      (propertize (format "%s" (overlay-get overlay 'languagetool-message))
+                                  'face 'font-lock-warning-face) "\n"))
+
+    ;; Format all the possible replacements for the correction suggestion
     (let ((replacements (languagetool--get-replacements overlay)))
       (when (< 0 (length replacements))
         (let ((num-choices (length replacements)))
+          ;; If can't assoc each replacement with each hotkey
           (when (> (length replacements) (length languagetool--correction-keys))
             (setq num-choices (length languagetool--correction-keys))
             (setq msg (concat msg "Not all choices shown.\n")))
           (setq msg (concat msg "\n"))
+          ;; Format all choices
           (dotimes (index num-choices)
-            (let ((current-string (format "%c" (aref languagetool--correction-keys index))))
-              (put-text-property 0 (length current-string)
-                                 'face 'font-lock-keyword-face
-                                 current-string)
-              (setq msg (concat msg "[" current-string "]: ")))
+            (setq msg (concat msg "["
+                              (propertize (format "%c" (aref languagetool--correction-keys index))
+                                          'face 'font-lock-keyword-face)
+                              "]: "))
             (setq msg (concat msg (nth index replacements) "  "))))))
-    (let ((current-string "C-i"))
-      (put-text-property 0 (length current-string)
-                         'face 'font-lock-keyword-face
-                         current-string)
-      (setq msg (concat msg "\n[" current-string "]: Ignore  ")))
-    (let ((current-string "C-s"))
-      (put-text-property 0 (length current-string)
-                         'face 'font-lock-keyword-face
-                         current-string)
-      (setq msg (concat msg "[" current-string "]: Skip\n")))
+    ;; Add default Ignore and Skip options
+    (setq msg (concat msg "\n["
+                      (propertize "C-i" 'face 'font-lock-keyword-face)
+                      "]: Ignore  "))
+    (setq msg (concat msg "["
+                      (propertize "C-s" 'face 'font-lock-keyword-face)
+                      "]: Skip\n"))
     msg))
 
 (defun languagetool--do-correction (pressed-key overlay)
