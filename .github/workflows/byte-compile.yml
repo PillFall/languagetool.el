@@ -1,0 +1,19 @@
+name: build
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install emacs
+        run: sudo apt install emacs
+      - name: Byte-compile the code
+        run: make
