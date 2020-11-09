@@ -12,6 +12,7 @@ link:https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 
 == [Unreleased]
+* Add support to LanguageTool HTTP server mode, and correction in real time.
 
 == [0.2.0]
 === Added
