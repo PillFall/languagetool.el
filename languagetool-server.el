@@ -72,9 +72,6 @@
 (defvar languagetool-server--started nil
   "Tell if the server can be used or not.")
 
-(defvar languagetool-server--count 0
-  "Counts the number of buffers using the server.")
-
 
 
 ;; Functions:
@@ -88,22 +85,20 @@
   :lighter " LT"
   (languagetool-server--toggle))
 
-(defun languagetool-server--toggle ()
-  "Start or closes LanguageTool Server."
-  (if languagetool-server-mode
-      (progn
-        (unless (process-live-p languagetool-server-process)
-          (unless (executable-find languagetool-java-bin)
-            (languagetool-server-mode -1)
-            (error "Java could not be found"))
-          (unless languagetool-server-language-tool-jar
-            (languagetool-server-mode -1)
-            (error "LanguageTool Server jar path is not set"))
-          (unless (file-readable-p languagetool-server-language-tool-jar)
-            (languagetool-server-mode -1)
-            (error "LanguageTool Server jar is not readable or could not be found"))
+;;;###autoload
+(defun languagetool-server-start ()
+  "Start the LanguageTool Server executable.
 
-          (let ((buffer (get-buffer-create languagetool-server-output-buffer-name)))
+Its not recommended to run this function more than once."
+  (unless (process-live-p languagetool-server-process)
+    (unless (executable-find languagetool-java-bin)
+      (error "Java could not be found"))
+    (unless languagetool-server-language-tool-jar
+      (error "LanguageTool Server jar path is not set"))
+    (unless (file-readable-p languagetool-server-language-tool-jar)
+      (error "LanguageTool Server jar is not readable or could not be found"))
+
+    (let ((buffer (get-buffer-create languagetool-server-output-buffer-name)))
             (with-current-buffer buffer
               (erase-buffer))
            (setq languagetool-server-process
@@ -115,13 +110,26 @@
                                  "org.languagetool.server.HTTPServer"
                                  "--port"
                                  (format "%d" languagetool-server-port))))
-          ;; Start showing corrections
-          (setq languagetool-hint--timer
-                (run-with-idle-timer languagetool-hint-idle-delay t
-                                     languagetool-hint-function)))
 
-        (setq languagetool-server--count (1+ languagetool-server--count))
+    (setq languagetool-hint--timer
+          (run-with-idle-timer languagetool-hint-idle-delay t
+                               languagetool-hint-function))))
 
+;;;###autoload
+(defun languagetool-server-stop ()
+  "Stops the LanguageTool Server executable."
+  (delete-process languagetool-server-process)
+  (when languagetool-hint--timer
+    (cancel-timer languagetool-hint--timer))
+
+  ;; Delete active server checking timer if still active
+  (when languagetool-server--start-check-timer
+    (cancel-timer languagetool-server--start-check-timer)))
+
+(defun languagetool-server--toggle ()
+  "Start or closes LanguageTool Server."
+  (if languagetool-server-mode
+      (progn
         ;; Start checking for LanguageTool server open
         (setq languagetool-server--start-check-timer
               (run-with-timer 0 languagetool-server--start-check-delay
@@ -134,22 +142,16 @@
           (add-hook hook #'languagetool-server-check nil 'local)))
 
     (progn
-      (when (= 1 languagetool-server--count)
-        ;; If there is no more buffers with LanguageTool server
-        ;; active, kill server and stop showing hints.
-        ;; Need to do more pretty. Help wanted.
-        (delete-process languagetool-server-process)
-        (when languagetool-hint--timer
-          (cancel-timer languagetool-hint--timer)))
-      ;; Reduce in one the server count
-      (setq languagetool-server--count (1- languagetool-server--count))
       ;; Delete active server checking timer if still active
       (when languagetool-server--start-check-timer
         (cancel-timer languagetool-server--start-check-timer))
+
       ;; Delete all the checking hooks
       (dolist (hook languagetool-server-delayed-commands)
         (remove-hook hook #'languagetool-server-check 'local))
+      ;; Delete correction in changes
       (remove-hook 'after-change-functions #'languagetool-server--check-on-change 'local)
+
       ;; Delete all LanguageTool overlays
       (languagetool-server--clear-buffer))))
 
