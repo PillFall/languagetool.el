@@ -367,26 +367,28 @@ The region is delimited by BEGIN and END"
    (if (region-active-p)
        (list (region-beginning) (region-end))
      (list (point-min) (point-max))))
-  (languagetool--invoke-command-region begin end)
-  (if (languagetool--check-corrections-p)
-      (progn
-        (message (substitute-command-keys "LangugeTool finished.
+  (unless languagetool-server-mode
+    (languagetool--invoke-command-region begin end)
+    (if (languagetool--check-corrections-p)
+        (progn
+          (message (substitute-command-keys "LangugeTool finished.
 Use \\[languagetool-correct-buffer] to correct the buffer."))
-        (languagetool--show-corrections begin)
-        (run-hooks 'languagetool-error-exists-hook))
-    (progn
-      (message "LanguageTool finished.
+          (languagetool--show-corrections begin)
+          (run-hooks 'languagetool-error-exists-hook))
+      (progn
+        (message "LanguageTool finished.
 Found no errors.")
-      (languagetool--clear-buffer)
-      (run-hooks 'languagetool-no-error-hook))))
+        (languagetool--clear-buffer)
+        (run-hooks 'languagetool-no-error-hook)))))
 
 ;;;###autoload
 (defun languagetool-clear-buffer ()
   "Deletes all buffer correction highlight."
   (interactive)
-  (languagetool--clear-buffer)
-  (run-hooks 'languagetool-finish-hook)
-  (message "Cleaned buffer from LanguageTool."))
+  (unless languagetool-server-mode
+    (languagetool--clear-buffer)
+    (run-hooks 'languagetool-finish-hook)
+    (message "Cleaned buffer from LanguageTool.")))
 
 ;;;###autoload
 (defun languagetool-set-language (lang)
@@ -461,6 +463,11 @@ Get the information about corrections from OVERLAY."
 The selected correction is given by PRESSED-KEY and the
 position, and suggestions are given by OVERLAY."
   (cond
+   ((char-equal ?\C-g pressed-key)
+    (progn
+      (goto-char (overlay-end overlay))
+      (setq languagetool-server--correcting-p nil)
+      (error "Quit")))
    ((char-equal ?\C-i pressed-key)
     (progn
       (goto-char (overlay-end overlay))
@@ -468,11 +475,14 @@ position, and suggestions are given by OVERLAY."
    ((char-equal ?\C-s pressed-key)
     (goto-char (overlay-end overlay)))
    ((not (cl-position pressed-key languagetool--correction-keys))
-    (error "Key `%c' cannot be used" pressed-key))
+    (progn
+      (setq languagetool-server--correcting-p nil)
+      (error "Key `%c' cannot be used" pressed-key)))
    (t
     (let ((size (length (languagetool--get-replacements overlay)))
           (pos (cl-position pressed-key languagetool--correction-keys)))
       (when (> (1+ pos) size)
+        (setq languagetool-server--correcting-p nil)
         (error "Correction key `%c' cannot be used" pressed-key))
       (delete-region (overlay-start overlay) (overlay-end overlay))
       (insert (nth pos (languagetool--get-replacements overlay)))
@@ -480,15 +490,16 @@ position, and suggestions are given by OVERLAY."
 
 (defun languagetool--correct-point ()
   "Show correction buffer at point and do correction."
-  (catch 'languagetool-correction
-    (let (pressed-key)
-      (dolist (ov (overlays-at (point)))
-        (when (overlay-get ov 'languagetool-message)
-          (message nil)
-          (setq pressed-key
-                (read-char (languagetool--parse-correction-message ov)))
-          (languagetool--do-correction pressed-key ov)
-          (throw 'languagetool-correction nil))))))
+  (setq languagetool-server--correcting-p t)
+  (let (pressed-key
+        (inhibit-quit t))
+    (dolist (ov (overlays-at (point)))
+      (when (overlay-get ov 'languagetool-message)
+        (message nil)
+        (setq pressed-key
+              (read-char (languagetool--parse-correction-message ov)))
+        (languagetool--do-correction pressed-key ov))))
+  (setq languagetool-server--correcting-p nil))
 
 ;;;###autoload
 (defun languagetool-correct-at-point ()

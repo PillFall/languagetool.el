@@ -69,8 +69,11 @@
 (defvar languagetool-server--start-check-delay 0.2
   "Number of seconds while idle to wait before checking again for initialized server.")
 
-(defvar languagetool-server--started nil
+(defvar languagetool-server--started-p nil
   "Tell if the server can be used or not.")
+
+(defvar languagetool-server--correcting-p nil
+  "Tell if we are actually correcting the buffer")
 
 
 
@@ -164,7 +167,7 @@ Its not recommended to run this function more than once."
       (save-excursion
         (goto-char (point-min))
         (when (search-forward "Server started" nil t)
-          (setq languagetool-server--started t)
+          (setq languagetool-server--started-p t)
           (when languagetool-server--start-check-timer
             (cancel-timer languagetool-server--start-check-timer))))))
   (languagetool-server-check))
@@ -185,18 +188,19 @@ completely."
 
 This function checks for the actual showed region of the buffer
 for suggestions."
-  (request
-    (format "%s:%d/v2/check" languagetool-server-url languagetool-server-port)
-    :type "POST"
-    :data (languagetool-server--parse-args)
-    :parser 'json-read
-    :success (cl-function
-              (lambda (&key response &allow-other-keys)
-                (languagetool-server--show-corrections (request-response-data response))))
-    :error (cl-function
-            (lambda (&rest args &key error-thrown &allow-other-keys)
-              (languagetool-server-mode -1)
-              (message "LanguageTool got error: %S" error-thrown)))))
+  (unless languagetool-server--correcting-p
+    (request
+      (format "%s:%d/v2/check" languagetool-server-url languagetool-server-port)
+      :type "POST"
+      :data (languagetool-server--parse-args)
+      :parser 'json-read
+      :success (cl-function
+                (lambda (&key response &allow-other-keys)
+                  (languagetool-server--show-corrections (request-response-data response))))
+      :error (cl-function
+              (lambda (&rest args &key error-thrown &allow-other-keys)
+                (languagetool-server-mode -1)
+                (message "LanguageTool got error: %S" error-thrown))))))
 
 (defun languagetool-server--parse-args ()
   "Return the server argument list.
