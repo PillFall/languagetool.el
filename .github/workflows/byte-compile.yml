@@ -15,5 +15,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install emacs
         run: sudo apt install emacs
+      - name: Install packages
+        run: |
+          emacs --batch --eval "(progn (require 'package) (add-to-list 'package-archives '(\"melpa\" . \"http://melpa.org/packages/\") t) (package-initialize) (package-refresh-contents) (package-install 'request))"
       - name: Byte-compile the code
         run: make
