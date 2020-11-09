@@ -4,8 +4,9 @@ v0.2.0, 2020-01-21
 
 [.text-center]
 --
-link:https://melpa.org/\#/languagetool[image:https://melpa.org/packages/languagetool-badge.svg[melpa]]
+link:https://melpa.org/\#/languagetool[image:https://melpa.org/packages/languagetool-badge.svg[MELPA]]
 link:https://stable.melpa.org/\#/languagetool[image:https://stable.melpa.org/packages/languagetool-badge.svg[MELPA Stable]]
+image:https://github.com/PillFall/Emacs-LanguageTool.el/workflows/build/badge.svg[build]
 --
 
 Use LanguageTool as your Emacs grammar and spelling corrector.

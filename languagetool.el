@@ -6,7 +6,7 @@
 ;; Keywords: grammar text docs tools
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
 ;; Version: 0.2.0
-;; Package-Requires: ((emacs "25.1"))
+;; Package-Requires: ((emacs "25.1") (request "0.3.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -31,12 +31,13 @@
 (eval-and-compile (require 'languagetool-issue-faces))
 
 (require 'json)
-(require 'url)
 
 (defgroup languagetool nil
   "LanguageTool's customization group."
   :prefix "languagetool-"
   :group 'applications)
+
+
 
 ;; Custom Variables:
 
@@ -150,6 +151,8 @@ A example hint function:
 (defvar languagetool-hint--timer nil
   "Hold idle timer watch every LanguageTool processed buffer.")
 
+
+
 ;; Local Variables:
 
 (defvar languagetool-local-disabled-rules nil
@@ -161,6 +164,7 @@ List of strings.")
 (make-variable-buffer-local 'languagetool-output-parsed)
 
 
+
 ;; Functions:
 
 ;; Create Functions:
@@ -168,26 +172,42 @@ List of strings.")
 (defun languagetool--parse-java-arguments ()
   "Return java arguments list.
 
-Return java arguments as a list of strings which will be used
-when correcting."
+Return the arguments as a list of strings which will be used in
+the call of LanguageTool when correcting the text."
   (let ((arguments nil))
+
+    ;; Appends arguments given to java
     (dolist (arg languagetool-java-arguments)
       (setq arguments (append arguments (list arg))))
+
+    ;; Appends the LanguageTool jar path
     (setq arguments (append arguments (list "-jar" languagetool-language-tool-jar)))
+
+    ;; Appends the LanguageTool arguments
     (dolist (arg languagetool-language-tool-arguments)
       (setq arguments (append arguments (list arg))))
+
+    ;; Appends the common arguments
     (setq arguments (append arguments (list "-c" "utf8")
                             (list "--json")))
+
+    ;; Appends the correction language information
     (if (string= languagetool-default-language "auto")
         (setq arguments (append arguments (list "-adl")))
       (setq arguments (append arguments (list "-l" languagetool-default-language))))
+
+    ;; Appends the mother tongue information
     (when (stringp languagetool-mother-tongue)
       (setq arguments (append arguments (list "-m" languagetool-mother-tongue))))
+
+    ;; Appends the disabled rules
     (let ((rules ""))
+      ;; Global disabled rules
       (dolist (rule languagetool-disabled-rules)
         (if (string= rules "")
             (setq rules (concat rules rule))
           (setq rules (concat rules "," rule))))
+      ;; Local disabled rules
       (dolist (rule languagetool-local-disabled-rules)
         (if (string= rules "")
             (setq rules (concat rules rule))
@@ -197,7 +217,7 @@ when correcting."
     arguments))
 
 (defun languagetool--get-face (issue-type)
-  "Get the face for the ISSUE-TYPE."
+  "Return the face for the ISSUE-TYPE."
   (cond
    ((string= issue-type "misspelling")
     'languagetool-misspelling-face)
@@ -232,6 +252,7 @@ and END, parsing CORRECTION as overlay properties."
       (overlay-put ov 'face (languagetool--get-face issue-type)))))
 
 
+
 ;; Output and debug functions:
 
 (defun languagetool--write-debug-info (text)
@@ -247,7 +268,9 @@ checking."
   (insert (propertize " ----- LanguageTool Text:" 'face 'font-lock-warning-face)
           "\n\n")
   (insert text "\n\n\n\n")
-  (insert (propertize " ----- LanguageTool Output:" 'face 'font-lock-warning-face) "\n\n"))
+  (insert (propertize " ----- LanguageTool Output:" 'face 'font-lock-warning-face)
+          "\n\n"))
+
 
 
 ;; Correction functions:
@@ -263,6 +286,7 @@ The region is delimited by BEGIN and END."
     (error "LanguageTool jar path is not set"))
   (unless (file-readable-p languagetool-language-tool-jar)
     (error "LanguageTool jar is not readable or could not be found"))
+
   (save-excursion
     (let ((status 0)
           (buffer (get-buffer-create languagetool-output-buffer-name))
@@ -482,6 +506,7 @@ position, and suggestions are given by OVERLAY."
                  (overlay-start ov))
         (goto-char (overlay-start ov))
         (languagetool--correct-point)))))
+
 
 
 (provide 'languagetool)

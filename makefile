@@ -1,6 +1,6 @@
 EMACS = emacs
 
-EMACS_FLAGS = -Q --batch -L . -f batch-byte-compile
+EMACS_FLAGS = -Q --batch -L ~/.emacs.d/elpa/request-20201026.2324 -L . -f batch-byte-compile
 
 SOURCES = $(filter-out %-autoloads.el %-pkg.el,$(wildcard *.el))
 
