@@ -38,10 +38,20 @@ is the `languagetool-commandline.jar` file in your `.emacs` file like:
 [source,lisp]
 ----
 (setq languagetool-language-tool-jar
-      "~/.languagetool/languagetool-commandline-jar")
+      "~/.languagetool/languagetool-commandline.jar")
 ----
 
 Or via customize.  It's preferred to use full path instead.
+
+If you are going to use the LanguageTool HTML Server you instead need
+to add to your `.emacs` file:
+
+[source, lisp]
+----
+(setq languagetool-server-language-tool-jar
+      "~/.languagetool/languagetool-server.jar")
+(languagetool-server-start)
+----
 
 It's recommended to add a Java flag to process the files in UTF-8, so
 you should add to your `.emacs`:
@@ -76,14 +86,23 @@ desired.
 
 For this package the suggested keybinding is:
 
-* `(global-set-key "\C-clc" 'languagetool-check)`
-* `(global-set-key "\C-cld" 'languagetool-clear-buffer)`
-* `(global-set-key "\C-clp" 'languagetool-correct-at-point)`
-* `(global-set-key "\C-clb" 'languagetool-correct-buffer)`
-* `(global-set-key "\C-cll" 'languagetool-set-language)`
+[source, lisp]
+----
+(global-set-key "\C-clc" 'languagetool-check)
+(global-set-key "\C-cld" 'languagetool-clear-buffer)
+(global-set-key "\C-clp" 'languagetool-correct-at-point)
+(global-set-key "\C-clb" 'languagetool-correct-buffer)
+(global-set-key "\C-cll" 'languagetool-set-language)
+----
 
 Once you are correcting with build in functions it will pop-up a
 correction buffer at the minibuffer, you only need to choose.
+
+Or you can use a LanguageTool HTTP Server with
+``languagetool-server-mode`.  In this mode the functions
+`languagetool-check` and `languagetool-clear-buffer` will be
+undefinded in the current buffer to prevent checking with another
+tool.  The other functions works as usual.
 
 
 
@@ -120,6 +139,9 @@ e.g.
 ;; or
 (setq languagetool-language-tool-arguments '("-flag" "argumentforflag")
 ----
+* `languagetool-server-language-tool-jar` Sets the path of the
+  LanguageTool Server jar file.  It's recommended to put the full
+  path.
 * `languagetool-default-language` Sets the LanguageTool correction
   language.  It can be changed via command with
   `languagetool-set-language`.
@@ -132,3 +154,7 @@ e.g.
   tells LanguageTool to ignore these rules when checking text but it's
   buffer local, so if you want you can set it in your local variables
   comment.
+* `languagetool-server-url` Tells LanguageTool Server mode to send
+  POST request to this url.  Set to `"http://localhost"` by default.
+* `languagetool-server-port` Tells LanguageTool Server mode to send
+  Post request to this port.  Set to `8081` by default.

@@ -123,6 +123,7 @@ Its not recommended to run this function more than once."
 (defun languagetool-server-stop ()
   "Stops the LanguageTool Server executable."
   (interactive)
+  (unless languagetool-server--started-p nil)
   (delete-process languagetool-server-process)
   (when languagetool-hint--timer
     (cancel-timer languagetool-hint--timer))
@@ -166,7 +167,8 @@ Its not recommended to run this function more than once."
     (with-current-buffer buffer
       (save-excursion
         (goto-char (point-min))
-        (when (search-forward "Server started" nil t)
+        (when (or languagetool-server--started-p
+                  (search-forward "Server started" nil t))
           (setq languagetool-server--started-p t)
           (when languagetool-server--start-check-timer
             (cancel-timer languagetool-server--start-check-timer))))))
