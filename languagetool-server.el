@@ -90,6 +90,7 @@
   "Start the LanguageTool Server executable.
 
 Its not recommended to run this function more than once."
+  (interactive)
   (unless (process-live-p languagetool-server-process)
     (unless (executable-find languagetool-java-bin)
       (error "Java could not be found"))
@@ -118,6 +119,7 @@ Its not recommended to run this function more than once."
 ;;;###autoload
 (defun languagetool-server-stop ()
   "Stops the LanguageTool Server executable."
+  (interactive)
   (delete-process languagetool-server-process)
   (when languagetool-hint--timer
     (cancel-timer languagetool-hint--timer))
@@ -183,15 +185,18 @@ completely."
 
 This function checks for the actual showed region of the buffer
 for suggestions."
-  (when (and languagetool-server--started)
-    (request
-      (format "%s:%d/v2/check" languagetool-server-url languagetool-server-port)
-      :type "POST"
-      :data (languagetool-server--parse-args)
-      :parser 'json-read
-      :success (cl-function
-                (lambda (&key response &allow-other-keys)
-                  (languagetool-server--show-corrections (request-response-data response)))))))
+  (request
+    (format "%s:%d/v2/check" languagetool-server-url languagetool-server-port)
+    :type "POST"
+    :data (languagetool-server--parse-args)
+    :parser 'json-read
+    :success (cl-function
+              (lambda (&key response &allow-other-keys)
+                (languagetool-server--show-corrections (request-response-data response))))
+    :error (cl-function
+            (lambda (&rest args &key error-thrown &allow-other-keys)
+              (languagetool-server-mode -1)
+              (message "LanguageTool got error: %S" error-thrown)))))
 
 (defun languagetool-server--parse-args ()
   "Return the server argument list.
