@@ -123,7 +123,7 @@ Its not recommended to run this function more than once."
 (defun languagetool-server-stop ()
   "Stops the LanguageTool Server executable."
   (interactive)
-  (unless languagetool-server--started-p nil)
+  (setq languagetool-server--started-p nil)
   (delete-process languagetool-server-process)
   (when languagetool-hint--timer
     (cancel-timer languagetool-hint--timer))

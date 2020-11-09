@@ -12,3 +12,6 @@ $(TARGETS): $(SOURCES)
 
 %.elc: %.el
 	$(EMACS) $(EMACS_FLAGS) $<
+
+clean:
+	rm *.elc
