@@ -103,17 +103,18 @@ Its not recommended to run this function more than once."
       (error "LanguageTool Server jar is not readable or could not be found"))
 
     (let ((buffer (get-buffer-create languagetool-server-output-buffer-name)))
-            (with-current-buffer buffer
-              (erase-buffer))
-           (setq languagetool-server-process
-                  (start-process "*LanguageTool Server*"
-                                 buffer
-                                 languagetool-java-bin
-                                 "-cp"
-                                 languagetool-server-language-tool-jar
-                                 "org.languagetool.server.HTTPServer"
-                                 "--port"
-                                 (format "%d" languagetool-server-port))))
+      (with-current-buffer buffer
+        (erase-buffer))
+      (setq languagetool-server-process
+            (start-process "*LanguageTool Server*"
+                           buffer
+                           languagetool-java-bin
+                           "-cp"
+                           languagetool-server-language-tool-jar
+                           "org.languagetool.server.HTTPServer"
+                           "--port"
+                           (format "%d" languagetool-server-port)))
+      (set-process-query-on-exit-flag languagetool-server-process nil))
 
     (setq languagetool-hint--timer
           (run-with-idle-timer languagetool-hint-idle-delay t
