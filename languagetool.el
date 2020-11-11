@@ -5,7 +5,7 @@
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 0.2.0
+;; Version: 0.3.0
 ;; Package-Requires: ((emacs "25.1") (request "0.3.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -134,7 +134,7 @@ More info at http://wiki.languagetool.org/command-line-options"
   "Tell if the server can be used or not.")
 
 (defvar languagetool-server--correcting-p nil
-  "Tell if we are actually correcting the buffer")
+  "Tell if we are actually correcting the buffer.")
 
 
 
