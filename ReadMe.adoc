@@ -1,6 +1,6 @@
 = languagetool.el
 Joar Buitago <jebuitragoc@unal.edu.co>
-v0.2.0, 2020-01-21
+v0.3.0, 2020-01-21
 
 [.text-center]
 --
@@ -158,3 +158,5 @@ e.g.
   POST request to this url.  Set to `"http://localhost"` by default.
 * `languagetool-server-port` Tells LanguageTool Server mode to send
   Post request to this port.  Set to `8081` by default.
+* `languagetool-server-delayed-commands` A list of hooks for sending a
+  request to the server.

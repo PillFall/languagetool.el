@@ -1,6 +1,6 @@
 = Change Log
 Joar Buitago <jebuitragoc@unal.edu.co>
-v0.2.0, 2020-01-21
+v0.3.0, 2020-01-21
 
 All notable changes to this project will be documented in this file.
 
@@ -12,7 +12,10 @@ link:https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 
 == [Unreleased]
-* Add support to LanguageTool HTTP server mode, and correction in real time.
+
+== [0.3.0]
+=== Added
+* Support to LanguageTool HTTP server mode, and correction in real time.
 
 == [0.2.0]
 === Added
