@@ -1,9 +1,9 @@
-;;; languagetool.el --- LanguageTool integration for grammar check -*- lexical-binding: t; -*-
+;;; languagetool.el --- LanguageTool integration for grammar and spell check -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020  Joar Buitrago
+;; Copyright (C) 2021  Joar Buitrago
 
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
-;; Keywords: grammar text docs tools
+;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
 ;; Version: 0.3.0
 ;; Package-Requires: ((emacs "25.1") (request "0.3.2"))
@@ -23,8 +23,15 @@
 
 ;;; Commentary:
 
-;; Correct the buffer or region with LanguageTool and show its
-;; suggestions in the buffer.
+;; Use LanguageTool as your grammar, orthography and styling checker
+;; tool in Emacs.
+
+;; languagetool is a utility tool to check and show suggestions made
+;; by LanguageTool in the buffer.  Also has real time suggestions made
+;; by the LanguageTool Server.
+
+;; For using this package you need Java and LanguageTool jar binaries
+;; available in your computer.
 
 ;;; Code:
 
