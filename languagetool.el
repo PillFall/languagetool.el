@@ -42,8 +42,11 @@
 
 
 
+;; Group:
+
 (defgroup languagetool nil
-  "LanguageTool's customization group."
+  "Spell check with LanguageTool."
+  :tag "LanguageTool"
   :prefix "languagetool-"
   :group 'applications)
 
@@ -52,7 +55,7 @@
 ;; Custom Variables:
 
 (defcustom languagetool-java-bin "java"
-  "Java executable path or name."
+  "Java executable path."
   :group 'languagetool
   :type 'file)
 
@@ -72,7 +75,7 @@ recommends to use:
 ;; Variables related to LanguageTool Command Line:
 
 (defcustom languagetool-language-tool-jar nil
-  "Absolute path to LanguageTool command line jar file."
+  "Path to LanguageTool Command Line jar file."
   :group 'languagetool
   :type 'file)
 
@@ -106,7 +109,7 @@ More info at http://wiki.languagetool.org/command-line-options"
 ;; Variables related to LanguageTool Server:
 
 (defcustom languagetool-server-language-tool-jar nil
-  "Absolute path to LanguageTool server jar file."
+  "Path to LanguageTool server jar file."
   :group 'languagetool
   :type 'file)
 
@@ -130,18 +133,6 @@ More info at http://wiki.languagetool.org/command-line-options"
 
 (defvar languagetool-server-process nil
   "A reference to the LanguageTool Server executable.")
-
-(defvar languagetool-server--start-check-timer nil
-  "Hold idle timer watch every LanguageTool processed buffer.")
-
-(defvar languagetool-server--start-check-delay 0.2
-  "Number of seconds while idle to wait before checking again for initialized server.")
-
-(defvar languagetool-server--started-p nil
-  "Tell if the server can be used or not.")
-
-(defvar languagetool-server--correcting-p nil
-  "Tell if we are actually correcting the buffer.")
 
 
 
@@ -209,7 +200,7 @@ A example hint function:
   :type 'number)
 
 (defvar languagetool-hint--timer nil
-  "Hold idle timer watch every LanguageTool processed buffer.")
+  "Hold idle timer that shows the hint in the minibuffer.")
 
 
 
@@ -223,6 +214,13 @@ List of strings.")
 (defvar languagetool-output-parsed nil)
 (make-variable-buffer-local 'languagetool-output-parsed)
 
+(defvar languagetool-server--started-p nil
+  "Tell if the server can be used or not.")
+(make-variable-buffer-local 'languagetool-server--started-p)
+
+(defvar languagetool-server--correcting-p nil
+  "Tell if we are actually correcting the buffer.")
+(make-variable-buffer-local 'languagetool-server--correcting-p)
 
 
 ;; Functions:
@@ -238,7 +236,7 @@ List of strings.")
 
 ;;;###autoload
 (defun languagetool-server-start ()
-  "Start the LanguageTool Server executable.
+  "Start the LanguageTool Server.
 
 Its not recommended to run this function more than once."
   (interactive)
@@ -251,8 +249,11 @@ Its not recommended to run this function more than once."
       (error "LanguageTool Server jar is not readable or could not be found"))
 
     (let ((buffer (get-buffer-create languagetool-server-output-buffer-name)))
+      ;; Clean the buffer before printing the LanguageTool Server Log
       (with-current-buffer buffer
         (erase-buffer))
+
+      ;; Start LanguageTool Server
       (setq languagetool-server-process
             (start-process "*LanguageTool Server*"
                            buffer
@@ -262,15 +263,18 @@ Its not recommended to run this function more than once."
                            "org.languagetool.server.HTTPServer"
                            "--port"
                            (format "%d" languagetool-server-port)))
+
+      ;; Does not block Emacs when close and do not shutdown the server
       (set-process-query-on-exit-flag languagetool-server-process nil))
 
+    ;; Start running the hint iddle timer
     (setq languagetool-hint--timer
           (run-with-idle-timer languagetool-hint-idle-delay t
                                languagetool-hint-function))))
 
 ;;;###autoload
 (defun languagetool-server-stop ()
-  "Stops the LanguageTool Server executable."
+  "Stops the LanguageTool Server."
   (interactive)
   (setq languagetool-server--started-p nil)
   (delete-process languagetool-server-process)
@@ -278,17 +282,16 @@ Its not recommended to run this function more than once."
     (cancel-timer languagetool-hint--timer))
 
   ;; Delete active server checking timer if still active
-  (when languagetool-server--start-check-timer
-    (cancel-timer languagetool-server--start-check-timer)))
+  (when languagetool-server--server-check-timer
+    (cancel-timer languagetool-server--server-check-timer)))
 
 (defun languagetool-server--toggle ()
-  "Start or closes LanguageTool Server."
+  "Enables or disables LanguageTool Server Mode."
   (if languagetool-server-mode
       (progn
-        ;; Start checking for LanguageTool server open
-        (setq languagetool-server--start-check-timer
-              (run-with-timer 0 languagetool-server--start-check-delay
-                              #'languagetool-server--start-check))
+        ;; Start checking for LanguageTool server is able to handle
+        ;; requests
+        (languagetool-server--server-check)
 
         ;; Start correction in changes
         (add-hook 'after-change-functions #'languagetool-server--check-on-change nil 'local)
@@ -297,9 +300,8 @@ Its not recommended to run this function more than once."
           (add-hook hook #'languagetool-server-check nil 'local)))
 
     (progn
-      ;; Delete active server checking timer if still active
-      (when languagetool-server--start-check-timer
-        (cancel-timer languagetool-server--start-check-timer))
+      ;; Delete the flag of server started.
+      (setq languagetool-server--started-p nil)
 
       ;; Delete all the checking hooks
       (dolist (hook languagetool-server-delayed-commands)
@@ -311,21 +313,26 @@ Its not recommended to run this function more than once."
       (languagetool-server--clear-buffer))))
 
 
-;; Server Checking Functions
+;; Server Checking Functions:
 
-
-(defun languagetool-server--start-check ()
-  "Start checking for correct init of LanguageTool Server."
-  (let ((buffer (get-buffer-create languagetool-server-output-buffer-name)))
-    (with-current-buffer buffer
-      (save-excursion
-        (goto-char (point-min))
-        (when (or languagetool-server--started-p
-                  (search-forward "Server started" nil t))
-          (setq languagetool-server--started-p t)
-          (when languagetool-server--start-check-timer
-            (cancel-timer languagetool-server--start-check-timer))))))
-  (languagetool-server-check))
+(defun languagetool-server--server-check ()
+  "Checks if the LanguageTool Server is able to handle requests."
+  (unless languagetool-server--started-p
+    (request
+      (format "%s:%d/v2/languages" languagetool-server-url languagetool-server-port)
+      :type "GET"
+      :parser 'json-read
+      :success (cl-function
+                (lambda (&key response &allow-other-keys)
+                  (message "LanguageTool Server communication up...")
+                  (setq languagetool-server--started-p t)
+                  (languagetool-server-check)))
+      :error (cl-function
+              (lambda (&rest args &key error-thrown &allow-other-keys)
+                (when (or
+                       languagetool-server-mode
+                       (not languagetool-server--started-p))
+                  (languagetool-server--server-check)))))))
 
 (defun languagetool-server--check-on-change (_begin _end _len)
   "Correct the buffer using LanguageTool and show its suggestion.
@@ -355,7 +362,7 @@ for suggestions."
       :error (cl-function
               (lambda (&rest args &key error-thrown &allow-other-keys)
                 (languagetool-server-mode -1)
-                (message "LanguageTool got error: %S" error-thrown))))))
+                (message "[Fatal Error] LanguageTool closed and got error: %S" error-thrown))))))
 
 (defun languagetool-server--parse-args ()
   "Return the server argument list.
