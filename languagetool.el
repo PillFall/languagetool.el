@@ -279,14 +279,10 @@ Its not recommended to run this function more than once."
   (setq languagetool-server--started-p nil)
   (delete-process languagetool-server-process)
   (when languagetool-hint--timer
-    (cancel-timer languagetool-hint--timer))
-
-  ;; Delete active server checking timer if still active
-  (when languagetool-server--server-check-timer
-    (cancel-timer languagetool-server--server-check-timer)))
+    (cancel-timer languagetool-hint--timer)))
 
 (defun languagetool-server--toggle ()
-  "Enables or disables LanguageTool Server Mode."
+  "Enables or disable LanguageTool Server Mode."
   (if languagetool-server-mode
       (progn
         ;; Start checking for LanguageTool server is able to handle
@@ -316,19 +312,19 @@ Its not recommended to run this function more than once."
 ;; Server Checking Functions:
 
 (defun languagetool-server--server-check ()
-  "Checks if the LanguageTool Server is able to handle requests."
+  "Check if the LanguageTool Server is able to handle requests."
   (unless languagetool-server--started-p
     (request
       (format "%s:%d/v2/languages" languagetool-server-url languagetool-server-port)
       :type "GET"
       :parser 'json-read
       :success (cl-function
-                (lambda (&key response &allow-other-keys)
+                (lambda (&key _response &allow-other-keys)
                   (message "LanguageTool Server communication up...")
                   (setq languagetool-server--started-p t)
                   (languagetool-server-check)))
       :error (cl-function
-              (lambda (&rest args &key error-thrown &allow-other-keys)
+              (lambda (&rest args &key _error-thrown &allow-other-keys)
                 (when (or
                        languagetool-server-mode
                        (not languagetool-server--started-p))
@@ -362,7 +358,9 @@ for suggestions."
       :error (cl-function
               (lambda (&rest args &key error-thrown &allow-other-keys)
                 (languagetool-server-mode -1)
-                (message "[Fatal Error] LanguageTool closed and got error: %S" error-thrown))))))
+                (message
+                 "[Fatal Error] LanguageTool closed and got error: %S"
+                 error-thrown))))))
 
 (defun languagetool-server--parse-args ()
   "Return the server argument list.
