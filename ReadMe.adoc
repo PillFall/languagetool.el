@@ -1,6 +1,6 @@
 = languagetool.el
 Joar Buitago <jebuitragoc@unal.edu.co>
-v0.3.0, 2020-01-21
+v0.4.0, 2020-01-21
 
 [.text-center]
 --
