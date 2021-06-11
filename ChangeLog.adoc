@@ -1,6 +1,6 @@
 = Change Log
 Joar Buitago <jebuitragoc@unal.edu.co>
-v0.3.0, 2020-01-21
+v0.4.0, 2020-01-21
 
 All notable changes to this project will be documented in this file.
 
@@ -12,6 +12,18 @@ link:https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 
 == [Unreleased]
+
+== [0.4.0]
+=== Added
+* LanguageTool Server Mode has a delay of two secconds before checking
+  the buffer when idle. (Close #2)
+* LanguageTool Server Mode better support for external servers.
+
+=== Changed
+* `languagetool-clear-buffer` now recheck the buffer when LanguageTool
+  Server Mode is active
+* LanguageTool Server Mode check every time it attemps to first
+  connect to a server.
 
 == [0.3.0]
 === Added

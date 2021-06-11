@@ -1,6 +1,6 @@
 = languagetool.el
 Joar Buitago <jebuitragoc@unal.edu.co>
-v0.3.0, 2020-01-21
+v0.4.0, 2020-01-21
 
 [.text-center]
 --
@@ -28,12 +28,13 @@ supports more than 30 languages.
 The first thing you need is *Java*, so download and install it.
 
 You also need to download
-*link:https://languagetool.org/[LanguageTool] Desktop Version* from
-its official page.
+*link:https://languagetool.org/download/[LanguageTool]* from its
+official page.
 
 After download, extract the contents in the folder you want
-(e.g. `~/.languagetool/`), you will need to say to the package where
-is the `languagetool-commandline.jar` file in your `.emacs` file like:
+(e.g. `~/.languagetool/`).  Now you will need to say to the package
+where is the `languagetool-commandline.jar` file in your `.emacs` file
+like:
 
 [source,lisp]
 ----
@@ -41,9 +42,9 @@ is the `languagetool-commandline.jar` file in your `.emacs` file like:
       "~/.languagetool/languagetool-commandline.jar")
 ----
 
-Or via customize.  It's preferred to use full path instead.
+Or via customize.  It's highly encouraged to use full path instead.
 
-If you are going to use the LanguageTool HTML Server you instead need
+If you are going to use the LanguageTool HTML Server instead, you need
 to add to your `.emacs` file:
 
 [source, lisp]
@@ -88,21 +89,22 @@ For this package the suggested keybinding is:
 
 [source, lisp]
 ----
-(global-set-key "\C-clc" 'languagetool-check)
-(global-set-key "\C-cld" 'languagetool-clear-buffer)
-(global-set-key "\C-clp" 'languagetool-correct-at-point)
-(global-set-key "\C-clb" 'languagetool-correct-buffer)
-(global-set-key "\C-cll" 'languagetool-set-language)
+(global-set-key (kbd "C-c l c") 'languagetool-check)
+(global-set-key (kbd "C-c l d") 'languagetool-clear-buffer)
+(global-set-key (kbd "C-c l p") 'languagetool-correct-at-point)
+(global-set-key (kbd "C-c l b") 'languagetool-correct-buffer)
+(global-set-key (kbd "C-c l l") 'languagetool-set-language)
 ----
 
 Once you are correcting with build in functions it will pop-up a
 correction buffer at the minibuffer, you only need to choose.
 
 Or you can use a LanguageTool HTTP Server with
-``languagetool-server-mode`.  In this mode the functions
-`languagetool-check` and `languagetool-clear-buffer` will be
-undefinded in the current buffer to prevent checking with another
-tool.  The other functions works as usual.
+`languagetool-server-mode`.  In this mode the function
+`languagetool-check` will be undefinded in the current buffer to
+prevent checking with another tool.  `languagetool-clear-buffer`
+clears and recheck the buffer in case of needed.  The other functions
+works as usual.
 
 
 
@@ -160,3 +162,6 @@ e.g.
   Post request to this port.  Set to `8081` by default.
 * `languagetool-server-delayed-commands` A list of hooks for sending a
   request to the server.
+* `languegetool-server-request-delay` Controls the number og seconts
+  while idle before this package sends a new request to the
+  LanguegeTool Server.

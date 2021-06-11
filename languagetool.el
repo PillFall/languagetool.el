@@ -1,11 +1,11 @@
-;;; languagetool.el --- LanguageTool integration for grammar check -*- lexical-binding: t; -*-
+;;; languagetool.el --- LanguageTool integration for grammar and spell check -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020  Joar Buitrago
+;; Copyright (C) 2021  Joar Buitrago
 
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
-;; Keywords: grammar text docs tools
+;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 0.3.0
+;; Version: 0.4.0
 ;; Package-Requires: ((emacs "25.1") (request "0.3.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -23,8 +23,15 @@
 
 ;;; Commentary:
 
-;; Correct the buffer or region with LanguageTool and show its
-;; suggestions in the buffer.
+;; Use LanguageTool as your grammar, orthography and styling checker
+;; tool in Emacs.
+
+;; languagetool is a utility tool to check and show suggestions made
+;; by LanguageTool in the buffer.  Also has real time suggestions made
+;; by the LanguageTool Server.
+
+;; For using this package you need Java and LanguageTool jar binaries
+;; available in your computer.
 
 ;;; Code:
 
@@ -35,8 +42,11 @@
 
 
 
+;; Group:
+
 (defgroup languagetool nil
-  "LanguageTool's customization group."
+  "Spell check with LanguageTool."
+  :tag "LanguageTool"
   :prefix "languagetool-"
   :group 'applications)
 
@@ -45,7 +55,7 @@
 ;; Custom Variables:
 
 (defcustom languagetool-java-bin "java"
-  "Java executable path or name."
+  "Java executable path."
   :group 'languagetool
   :type 'file)
 
@@ -65,7 +75,7 @@ recommends to use:
 ;; Variables related to LanguageTool Command Line:
 
 (defcustom languagetool-language-tool-jar nil
-  "Absolute path to LanguageTool command line jar file."
+  "Path to LanguageTool Command Line jar file."
   :group 'languagetool
   :type 'file)
 
@@ -99,7 +109,7 @@ More info at http://wiki.languagetool.org/command-line-options"
 ;; Variables related to LanguageTool Server:
 
 (defcustom languagetool-server-language-tool-jar nil
-  "Absolute path to LanguageTool server jar file."
+  "Path to LanguageTool server jar file."
   :group 'languagetool
   :type 'file)
 
@@ -123,18 +133,6 @@ More info at http://wiki.languagetool.org/command-line-options"
 
 (defvar languagetool-server-process nil
   "A reference to the LanguageTool Server executable.")
-
-(defvar languagetool-server--start-check-timer nil
-  "Hold idle timer watch every LanguageTool processed buffer.")
-
-(defvar languagetool-server--start-check-delay 0.2
-  "Number of seconds while idle to wait before checking again for initialized server.")
-
-(defvar languagetool-server--started-p nil
-  "Tell if the server can be used or not.")
-
-(defvar languagetool-server--correcting-p nil
-  "Tell if we are actually correcting the buffer.")
 
 
 
@@ -201,8 +199,13 @@ A example hint function:
   :group 'languagetool
   :type 'number)
 
+(defcustom languagetool-server-request-delay 2.0
+  "Number of seconds while idle to wait before sending request to server."
+  :group 'languagetool
+  :type 'number)
+
 (defvar languagetool-hint--timer nil
-  "Hold idle timer watch every LanguageTool processed buffer.")
+  "Hold idle timer that shows the hint in the minibuffer.")
 
 
 
@@ -216,6 +219,17 @@ List of strings.")
 (defvar languagetool-output-parsed nil)
 (make-variable-buffer-local 'languagetool-output-parsed)
 
+(defvar languagetool-server--started-p nil
+  "Tell if the server can be used or not.")
+(make-variable-buffer-local 'languagetool-server--started-p)
+
+(defvar languagetool-server--correcting-p nil
+  "Tell if we are actually correcting the buffer.")
+(make-variable-buffer-local 'languagetool-server--correcting-p)
+
+(defvar languagetool-server--timer nil
+  "Hold idle time that send request to LanguageTool server.")
+(make-variable-buffer-local 'languagetool-server--timer)
 
 
 ;; Functions:
@@ -231,7 +245,7 @@ List of strings.")
 
 ;;;###autoload
 (defun languagetool-server-start ()
-  "Start the LanguageTool Server executable.
+  "Start the LanguageTool Server.
 
 Its not recommended to run this function more than once."
   (interactive)
@@ -244,8 +258,11 @@ Its not recommended to run this function more than once."
       (error "LanguageTool Server jar is not readable or could not be found"))
 
     (let ((buffer (get-buffer-create languagetool-server-output-buffer-name)))
+      ;; Clean the buffer before printing the LanguageTool Server Log
       (with-current-buffer buffer
         (erase-buffer))
+
+      ;; Start LanguageTool Server
       (setq languagetool-server-process
             (start-process "*LanguageTool Server*"
                            buffer
@@ -255,44 +272,51 @@ Its not recommended to run this function more than once."
                            "org.languagetool.server.HTTPServer"
                            "--port"
                            (format "%d" languagetool-server-port)))
+
+      ;; Does not block Emacs when close and do not shutdown the server
       (set-process-query-on-exit-flag languagetool-server-process nil))
 
+    ;; Start running the hint idle timer
     (setq languagetool-hint--timer
           (run-with-idle-timer languagetool-hint-idle-delay t
                                languagetool-hint-function))))
 
 ;;;###autoload
 (defun languagetool-server-stop ()
-  "Stops the LanguageTool Server executable."
+  "Stops the LanguageTool Server."
   (interactive)
-  (setq languagetool-server--started-p nil)
-  (delete-process languagetool-server-process)
-  (when languagetool-hint--timer
-    (cancel-timer languagetool-hint--timer))
-
-  ;; Delete active server checking timer if still active
-  (when languagetool-server--start-check-timer
-    (cancel-timer languagetool-server--start-check-timer)))
+  (delete-process languagetool-server-process))
 
 (defun languagetool-server--toggle ()
-  "Start or closes LanguageTool Server."
+  "Enables or disable LanguageTool Server Mode."
   (if languagetool-server-mode
       (progn
-        ;; Start checking for LanguageTool server open
-        (setq languagetool-server--start-check-timer
-              (run-with-timer 0 languagetool-server--start-check-delay
-                              #'languagetool-server--start-check))
+        ;; Start checking for LanguageTool server is able to handle
+        ;; requests
+        (languagetool-server--server-check)
+
+        ;; Create hint timer
+        (setq languagetool-hint--timer
+              (run-with-idle-timer languagetool-hint-idle-delay t
+                                   languagetool-hint-function))
 
         ;; Start correction in changes
-        (add-hook 'after-change-functions #'languagetool-server--check-on-change nil 'local)
+        (add-hook
+         'after-change-functions
+         #'languagetool-server--check-on-change
+         nil 'local)
         ;; Start correction on hooks
         (dolist (hook (reverse languagetool-server-delayed-commands))
-          (add-hook hook #'languagetool-server-check nil 'local)))
+          (add-hook hook #'languagetool-server-check nil 'local))
+
+        ;; Add timer to delay
+        (setq languagetool-server--timer
+              (run-with-idle-timer languagetool-server-request-delay t
+                                   #'languagetool-server-check)))
 
     (progn
-      ;; Delete active server checking timer if still active
-      (when languagetool-server--start-check-timer
-        (cancel-timer languagetool-server--start-check-timer))
+      ;; Delete the flag of server started.
+      (setq languagetool-server--started-p nil)
 
       ;; Delete all the checking hooks
       (dolist (hook languagetool-server-delayed-commands)
@@ -300,25 +324,33 @@ Its not recommended to run this function more than once."
       ;; Delete correction in changes
       (remove-hook 'after-change-functions #'languagetool-server--check-on-change 'local)
 
+      ;; Cancel buffer local timer
+      (cancel-timer languagetool-server--timer)
+
       ;; Delete all LanguageTool overlays
       (languagetool-server--clear-buffer))))
 
 
-;; Server Checking Functions
+;; Server Checking Functions:
 
-
-(defun languagetool-server--start-check ()
-  "Start checking for correct init of LanguageTool Server."
-  (let ((buffer (get-buffer-create languagetool-server-output-buffer-name)))
-    (with-current-buffer buffer
-      (save-excursion
-        (goto-char (point-min))
-        (when (or languagetool-server--started-p
-                  (search-forward "Server started" nil t))
-          (setq languagetool-server--started-p t)
-          (when languagetool-server--start-check-timer
-            (cancel-timer languagetool-server--start-check-timer))))))
-  (languagetool-server-check))
+(defun languagetool-server--server-check ()
+  "Check if the LanguageTool Server is able to handle requests."
+  (unless languagetool-server--started-p
+    (request
+      (format "%s:%d/v2/languages" languagetool-server-url languagetool-server-port)
+      :type "GET"
+      :parser 'json-read
+      :success (cl-function
+                (lambda (&key _response &allow-other-keys)
+                  (message "LanguageTool Server communication up...")
+                  (setq languagetool-server--started-p t)
+                  (languagetool-server-check)))
+      :error (cl-function
+              (lambda (&rest args &key _error-thrown &allow-other-keys)
+                (when (or
+                       languagetool-server-mode
+                       (not languagetool-server--started-p))
+                  (languagetool-server--server-check)))))))
 
 (defun languagetool-server--check-on-change (_begin _end _len)
   "Correct the buffer using LanguageTool and show its suggestion.
@@ -336,19 +368,23 @@ completely."
 
 This function checks for the actual showed region of the buffer
 for suggestions."
-  (unless languagetool-server--correcting-p
-    (request
-      (format "%s:%d/v2/check" languagetool-server-url languagetool-server-port)
-      :type "POST"
-      :data (languagetool-server--parse-args)
-      :parser 'json-read
-      :success (cl-function
-                (lambda (&key response &allow-other-keys)
-                  (languagetool-server--show-corrections (request-response-data response))))
-      :error (cl-function
-              (lambda (&rest args &key error-thrown &allow-other-keys)
-                (languagetool-server-mode -1)
-                (message "LanguageTool got error: %S" error-thrown))))))
+  (when languagetool-server-mode
+    (unless languagetool-server--correcting-p
+      (request
+        (format "%s:%d/v2/check" languagetool-server-url languagetool-server-port)
+        :type "POST"
+        :data (languagetool-server--parse-args)
+        :parser 'json-read
+        :success (cl-function
+                  (lambda (&key response &allow-other-keys)
+                    (languagetool-server--show-corrections
+                     (request-response-data response))))
+        :error (cl-function
+                (lambda (&rest args &key error-thrown &allow-other-keys)
+                  (languagetool-server-mode -1)
+                  (message
+                   "[Fatal Error] LanguageTool closed and got error: %S"
+                   error-thrown)))))))
 
 (defun languagetool-server--parse-args ()
   "Return the server argument list.
@@ -358,11 +394,15 @@ used in the POST request made to the LanguageTool server."
   (let ((arguments (json-new-object)))
 
     ;; Appends the correction language information
-    (setq arguments (json-add-to-object arguments "language" languagetool-default-language))
+    (setq arguments (json-add-to-object arguments
+                                        "language"
+                                        languagetool-default-language))
 
     ;; Appends the mother tongue information
     (when (stringp languagetool-mother-tongue)
-      (setq arguments (json-add-to-object arguments "motherTongue" languagetool-mother-tongue)))
+      (setq arguments (json-add-to-object arguments
+                                          "motherTongue"
+                                          languagetool-mother-tongue)))
 
     ;; Appends the disabled rules
     (let ((rules ""))
@@ -380,8 +420,11 @@ used in the POST request made to the LanguageTool server."
         (setq arguments (json-add-to-object arguments "disabledRules" rules))))
 
     ;; Add the buffer contents
-    (setq arguments (json-add-to-object arguments "text"
-                                        (buffer-substring-no-properties (point-min) (point-max))))
+    (setq arguments (json-add-to-object arguments
+                                        "text"
+                                        (buffer-substring-no-properties
+                                         (point-min)
+                                         (point-max))))
     arguments))
 
 (defun languagetool-server--show-corrections (json-parsed)
@@ -390,15 +433,16 @@ used in the POST request made to the LanguageTool server."
 JSON-PARSED is a json object with the suggestions thrown by the
 LanguageTool Server."
   (languagetool-server--clear-buffer)
-  (let ((corrections (cdr (assoc 'matches json-parsed)))
-        (correction nil))
-    (dotimes (index (length corrections))
-      (setq correction (aref corrections index))
-      (let ((offset (cdr (assoc 'offset correction)))
-            (size (cdr (assoc 'length correction))))
-        (languagetool--create-overlay
-         (+ (point-min) offset) (+ (point-min) offset size)
-         correction)))))
+  (when languagetool-server-mode
+    (let ((corrections (cdr (assoc 'matches json-parsed)))
+          (correction nil))
+      (dotimes (index (length corrections))
+        (setq correction (aref corrections index))
+        (let ((offset (cdr (assoc 'offset correction)))
+              (size (cdr (assoc 'length correction))))
+          (languagetool--create-overlay
+           (+ (point-min) offset) (+ (point-min) offset size)
+           correction))))))
 
 (defun languagetool-server--clear-buffer ()
   "Deletes all the buffer overlays."
@@ -558,10 +602,7 @@ The region is delimited by BEGIN and END."
 
 (defun languagetool--check-corrections-p ()
   "Return t if corrections can be made or nil otherwise."
-  (if (/= 0
-          (length (cdr (assoc 'matches languagetool-output-parsed))))
-      t
-    nil))
+  (/= 0 (length (cdr (assoc 'matches languagetool-output-parsed)))))
 
 (defun languagetool--get-replacements (overlay)
   "Return the replacements of OVERLAY in a list."
@@ -596,9 +637,7 @@ BEGIN defines the start of the current region."
     (save-excursion
       (dolist (ov (overlays-in (point-min) (point-max)))
         (when (overlay-get ov 'languagetool-message)
-          (delete-overlay ov)))))
-  (when languagetool-hint--timer
-    (cancel-timer languagetool-hint--timer)))
+          (delete-overlay ov))))))
 
 ;;;###autoload
 (defun languagetool-check (begin end)
@@ -627,12 +666,19 @@ Found no errors.")
 
 ;;;###autoload
 (defun languagetool-clear-buffer ()
-  "Deletes all buffer correction highlight."
+  "Deletes all buffer correction highlight.
+
+In server mode clears the buffer and recreate all the suggestions
+in case of a bug."
   (interactive)
-  (unless languagetool-server-mode
-    (languagetool--clear-buffer)
-    (run-hooks 'languagetool-finish-hook)
-    (message "Cleaned buffer from LanguageTool.")))
+  (if languagetool-server-mode
+      (progn
+        (message "Rechecking buffer...")
+        (languagetool-server-check))
+    (progn
+      (languagetool--clear-buffer)
+      (run-hooks 'languagetool-finish-hook)
+      (message "Cleaned buffer from LanguageTool."))))
 
 ;;;###autoload
 (defun languagetool-set-language (lang)
@@ -674,8 +720,10 @@ Get the information about corrections from OVERLAY."
 
     ;; Add LanguageTool correction suggestion
     (setq msg (concat msg
-                      (propertize (format "%s" (overlay-get overlay 'languagetool-message))
-                                  'face 'font-lock-warning-face) "\n"))
+                      (propertize
+                       (format "%s" (overlay-get overlay 'languagetool-message))
+                       'face 'font-lock-warning-face)
+                      "\n"))
 
     ;; Format all the possible replacements for the correction suggestion
     (let ((replacements (languagetool--get-replacements overlay)))
@@ -688,9 +736,11 @@ Get the information about corrections from OVERLAY."
           (setq msg (concat msg "\n"))
           ;; Format all choices
           (dotimes (index num-choices)
-            (setq msg (concat msg "["
-                              (propertize (format "%c" (aref languagetool--correction-keys index))
-                                          'face 'font-lock-keyword-face)
+            (setq msg (concat msg
+                              "["
+                              (propertize
+                               (format "%c" (aref languagetool--correction-keys index))
+                               'face 'font-lock-keyword-face)
                               "]: "))
             (setq msg (concat msg (nth index replacements) "  "))))))
     ;; Add default Ignore and Skip options
