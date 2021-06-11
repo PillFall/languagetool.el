@@ -28,8 +28,8 @@ supports more than 30 languages.
 The first thing you need is *Java*, so download and install it.
 
 You also need to download
-*link:https://languagetool.org/download/[LanguageTool] Desktop
-Version* from its official page.
+*link:https://languagetool.org/download/[LanguageTool]* from its
+official page.
 
 After download, extract the contents in the folder you want
 (e.g. `~/.languagetool/`).  Now you will need to say to the package
@@ -100,10 +100,11 @@ Once you are correcting with build in functions it will pop-up a
 correction buffer at the minibuffer, you only need to choose.
 
 Or you can use a LanguageTool HTTP Server with
-`languagetool-server-mode`.  In this mode the functions
-`languagetool-check` and `languagetool-clear-buffer` will be
-undefinded in the current buffer to prevent checking with another
-tool.  The other functions works as usual.
+`languagetool-server-mode`.  In this mode the function
+`languagetool-check` will be undefinded in the current buffer to
+prevent checking with another tool.  `languagetool-clear-buffer`
+clears and recheck the buffer in case of needed.  The other functions
+works as usual.
 
 
 
@@ -161,3 +162,6 @@ e.g.
   Post request to this port.  Set to `8081` by default.
 * `languagetool-server-delayed-commands` A list of hooks for sending a
   request to the server.
+* `languegetool-server-request-delay` Controls the number og seconts
+  while idle before this package sends a new request to the
+  LanguegeTool Server.

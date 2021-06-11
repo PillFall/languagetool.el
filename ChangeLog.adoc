@@ -12,6 +12,16 @@ link:https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 
 == [Unreleased]
+=== Added
+* LanguageTool Server Mode has a delay of two secconds before checking
+  the buffer when idle. (Close #2)
+* LanguageTool Server Mode better support for external servers.
+
+=== Changed
+* `languagetool-clear-buffer` now recheck the buffer when LanguageTool
+  Server Mode is active
+* LanguageTool Server Mode check every time it attemps to first
+  connect to a server.
 
 == [0.3.0]
 === Added
