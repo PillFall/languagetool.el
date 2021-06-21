@@ -5,7 +5,7 @@
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 0.4.1
+;; Version: 0.4.2
 ;; Package-Requires: ((emacs "25.1") (request "0.3.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -263,7 +263,9 @@ Its not recommended to run this function more than once."
       (error "Java could not be found"))
     (unless languagetool-server-language-tool-jar
       (error "LanguageTool Server jar path is not set"))
-    (unless (file-readable-p languagetool-server-language-tool-jar)
+    (unless (or
+             languagetool-language-tool-class
+             (file-readable-p languagetool-server-language-tool-jar))
       (error "LanguageTool Server jar is not readable or could not be found"))
 
     (let ((buffer (get-buffer-create languagetool-server-output-buffer-name)))
@@ -273,15 +275,11 @@ Its not recommended to run this function more than once."
 
       ;; Start LanguageTool Server
       (setq languagetool-server-process
-            (start-process "*LanguageTool Server*"
-                           buffer
-                           languagetool-java-bin
-                           (string-join languagetool-java-arguments  " ")
-                           "-cp"
-                           languagetool-server-language-tool-jar
-                           "org.languagetool.server.HTTPServer"
-                           "--port"
-                           (format "%d" languagetool-server-port)))
+            (apply #'start-process
+                   "*LanguageTool Server*"
+                   buffer
+                   languagetool-java-bin
+                   (languagetool-server--init-args)))
 
       ;; Does not block Emacs when close and do not shutdown the server
       (set-process-query-on-exit-flag languagetool-server-process nil))
@@ -290,6 +288,28 @@ Its not recommended to run this function more than once."
     (setq languagetool-hint--timer
           (run-with-idle-timer languagetool-hint-idle-delay t
                                languagetool-hint-function))))
+
+(defun languagetool-server--init-args ()
+  "Parse the arguments needed to start HTTP server."
+  (let ((arguments nil))
+
+    ;; Appends arguments given to java
+    (dolist (arg languagetool-java-arguments)
+      (setq arguments (append arguments (list arg))))
+
+    ;; Appends the LanguageTool Server jar path
+    (unless languagetool-language-tool-class
+      (setq arguments (append arguments (list "-cp"))))
+    (setq arguments (append arguments (list languagetool-server-language-tool-jar)))
+    (unless languagetool-language-tool-class
+      (setq arguments (append arguments (list "org.languagetool.server.HTTPServer"))))
+
+    ;; Appends the port information
+    (setq arguments (append arguments
+                            (list "--port"
+                                  (format "%d" languagetool-server-port))))
+
+    arguments))
 
 ;;;###autoload
 (defun languagetool-server-stop ()
@@ -584,7 +604,9 @@ The region is delimited by BEGIN and END."
     (error "Java could not be found"))
   (unless languagetool-language-tool-jar
     (error "LanguageTool jar path is not set"))
-  (unless (file-readable-p languagetool-language-tool-jar)
+  (unless (or
+           languagetool-language-tool-class
+           (file-readable-p languagetool-language-tool-jar))
     (error "LanguageTool jar is not readable or could not be found"))
 
   (save-excursion
