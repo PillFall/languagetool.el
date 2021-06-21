@@ -5,7 +5,7 @@
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 0.4.0
+;; Version: 0.4.1
 ;; Package-Requires: ((emacs "25.1") (request "0.3.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -39,6 +39,7 @@
 
 (require 'json)
 (require 'request)
+(eval-when-compile (require 'subr-x))
 
 
 
@@ -73,6 +74,14 @@ recommends to use:
 
 
 ;; Variables related to LanguageTool Command Line:
+
+(defcustom languagetool-language-tool-class nil
+  "Tells if the package is using the LanguageTool classes directly.
+
+When nil this package will use the -jar flag in java, and will
+omit it from arguments otherwise."
+  :group 'languagetool
+  :type 'boolean)
 
 (defcustom languagetool-language-tool-jar nil
   "Path to LanguageTool Command Line jar file."
@@ -267,6 +276,7 @@ Its not recommended to run this function more than once."
             (start-process "*LanguageTool Server*"
                            buffer
                            languagetool-java-bin
+                           (string-join languagetool-java-arguments  " ")
                            "-cp"
                            languagetool-server-language-tool-jar
                            "org.languagetool.server.HTTPServer"
@@ -469,7 +479,9 @@ the call of LanguageTool when correcting the text."
       (setq arguments (append arguments (list arg))))
 
     ;; Appends the LanguageTool jar path
-    (setq arguments (append arguments (list "-jar" languagetool-language-tool-jar)))
+    (unless languagetool-language-tool-class
+      (setq arguments (append arguments (list "-jar"))))
+    (setq arguments (append arguments (list languagetool-language-tool-jar)))
 
     ;; Appends the LanguageTool arguments
     (dolist (arg languagetool-language-tool-arguments)

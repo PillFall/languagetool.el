@@ -1,6 +1,6 @@
 EMACS = emacs
 
-EMACS_FLAGS = -Q --batch -f package-initialize -L . -f batch-byte-compile
+EMACS_FLAGS = -Q --batch --eval "(setq byte-compile-error-on-warn t)" -f package-initialize -L . -f batch-byte-compile
 
 SOURCES = $(filter-out %-autoloads.el %-pkg.el, $(wildcard *.el))
 
