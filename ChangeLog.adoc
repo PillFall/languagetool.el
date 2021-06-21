@@ -12,6 +12,8 @@ link:https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 
 == [Unreleased]
+=== Fixed
+* Support for using class files directly. (Fix #3)
 
 == [0.4.0]
 === Added
