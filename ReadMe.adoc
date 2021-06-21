@@ -9,7 +9,11 @@ link:https://stable.melpa.org/\#/languagetool[image:https://stable.melpa.org/pac
 image:https://github.com/PillFall/Emacs-LanguageTool.el/workflows/build/badge.svg[build]
 --
 
-Use LanguageTool as your Emacs grammar and spelling corrector.
+Use LanguageTool as your Emacs grammar, spelling and styling
+corrector.
+
+.Package in action. Text from https://languagetool.org/
+image::https://i.stack.imgur.com/1oqM7.png[Package in action]
 
 This package was based on
 link:https://github.com/mhayashi1120/Emacs-langtool/[mhayashi1120
@@ -23,7 +27,9 @@ supports more than 30 languages.
 
 
 
-== Getting Started
+== Installation
+
+=== Obtaining the prerequisites
 
 The first thing you need is *Java*, so download and install it.
 
@@ -31,12 +37,16 @@ You also need to download
 *link:https://languagetool.org/download/[LanguageTool]* from its
 official page.
 
-After download, extract the contents in the folder you want
-(e.g. `~/.languagetool/`).  Now you will need to say to the package
-where is the `languagetool-commandline.jar` file in your `.emacs` file
-like:
+After download, extract the contents in a folder you want
+(e.g. `~/.languagetool/`).
 
-[source,lisp]
+
+=== Configuring the package
+
+Next you need to set the package configuration. First we add the path
+to the `languagetool-commandline.jar` file in your `.emacs` file like:
+
+[source, lisp]
 ----
 (setq languagetool-language-tool-jar
       "~/.languagetool/languagetool-commandline.jar")
@@ -44,7 +54,7 @@ like:
 
 Or via customize.  It's highly encouraged to use full path instead.
 
-If you are going to use the LanguageTool HTML Server instead, you need
+If you are going to use the LanguageTool HTTP Server instead, you need
 to add to your `.emacs` file:
 
 [source, lisp]
@@ -57,7 +67,7 @@ to add to your `.emacs` file:
 It's recommended to add a Java flag to process the files in UTF-8, so
 you should add to your `.emacs`:
 
-[source,lisp]
+[source, lisp]
 ----
 (setq languagetool-java-arguments '("-Dfile.encoding=UTF-8"))
 ----
@@ -65,7 +75,7 @@ you should add to your `.emacs`:
 And finally you should tell which language are you using by default in
 your `.emacs` file like:
 
-[source,lisp]
+[source, lisp]
 ----
 (setq languagetool-default-language "en-GB")
 ----
@@ -101,7 +111,7 @@ correction buffer at the minibuffer, you only need to choose.
 
 Or you can use a LanguageTool HTTP Server with
 `languagetool-server-mode`.  In this mode the function
-`languagetool-check` will be undefinded in the current buffer to
+`languagetool-check` will be undefined in the current buffer to
 prevent checking with another tool.  `languagetool-clear-buffer`
 clears and recheck the buffer in case of needed.  The other functions
 works as usual.
@@ -127,6 +137,8 @@ e.g.
 ;; or
 (setq languagetool-java-arguments '("-flag" "argumentforflag")
 ----
+* `languagetool-language-tool-class` Tell the package that the package
+  will use the class files directly.  Set to `nil` by default.
 * `languagetool-language-tool-jar` Sets the path of the LanguageTool
   command line jar file.  It's recommended to put the full path.
 * `languagetool-language-tool-arguments` Sets arguments to pass to
