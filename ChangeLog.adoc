@@ -12,6 +12,8 @@ link:https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 
 == [Unreleased]
+
+== [0.4.2]
 === Fixed
 * Error when checking with classes on. (Fix #3)
 
