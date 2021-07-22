@@ -5,7 +5,7 @@
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 0.4.2
+;; Version: 0.4.3
 ;; Package-Requires: ((emacs "25.1") (request "0.3.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -265,7 +265,7 @@ Its not recommended to run this function more than once."
       (error "LanguageTool Server jar path is not set"))
     (unless (or
              languagetool-language-tool-class
-             (file-readable-p languagetool-server-language-tool-jar))
+             (file-readable-p (file-truename languagetool-server-language-tool-jar)))
       (error "LanguageTool Server jar is not readable or could not be found"))
 
     (let ((buffer (get-buffer-create languagetool-server-output-buffer-name)))
@@ -300,7 +300,7 @@ Its not recommended to run this function more than once."
     ;; Appends the LanguageTool Server jar path
     (unless languagetool-language-tool-class
       (setq arguments (append arguments (list "-cp"))))
-    (setq arguments (append arguments (list languagetool-server-language-tool-jar)))
+    (setq arguments (append arguments (list (file-truename languagetool-server-language-tool-jar))))
     (unless languagetool-language-tool-class
       (setq arguments (append arguments (list "org.languagetool.server.HTTPServer"))))
 
@@ -501,7 +501,7 @@ the call of LanguageTool when correcting the text."
     ;; Appends the LanguageTool jar path
     (unless languagetool-language-tool-class
       (setq arguments (append arguments (list "-jar"))))
-    (setq arguments (append arguments (list languagetool-language-tool-jar)))
+    (setq arguments (append arguments (list (file-truename languagetool-language-tool-jar))))
 
     ;; Appends the LanguageTool arguments
     (dolist (arg languagetool-language-tool-arguments)
@@ -606,7 +606,7 @@ The region is delimited by BEGIN and END."
     (error "LanguageTool jar path is not set"))
   (unless (or
            languagetool-language-tool-class
-           (file-readable-p languagetool-language-tool-jar))
+           (file-readable-p (file-truename languagetool-language-tool-jar)))
     (error "LanguageTool jar is not readable or could not be found"))
 
   (save-excursion

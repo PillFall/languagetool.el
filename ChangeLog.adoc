@@ -1,6 +1,6 @@
 = Change Log
 Joar Buitago <jebuitragoc@unal.edu.co>
-v0.4.1, 2020-01-21
+v0.4.3, 2020-01-21
 
 All notable changes to this project will be documented in this file.
 
@@ -12,6 +12,10 @@ link:https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 
 == [Unreleased]
+
+== [0.4.3]
+=== Fixed
+* Error when putting `~` on LanguageTool jar path. (Fix #7)
 
 == [0.4.2]
 === Fixed
