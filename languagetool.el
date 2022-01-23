@@ -6,7 +6,7 @@
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
 ;; Version: 0.4.3
-;; Package-Requires: ((emacs "25.1") (request "0.3.2"))
+;; Package-Requires: ((emacs "27.0") (request "0.3.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -36,7 +36,6 @@
 ;;; Code:
 
 (require 'json)
-;;(require 'request)
 
 ;; Group definition:
 
@@ -48,7 +47,7 @@
 
 (require 'languagetool-correction)
 (require 'languagetool-console)
-;;(require 'languagetool-server)
+(require 'languagetool-server)
 
 ;;;###autoload
 (defun languagetool-check (begin end)
@@ -56,41 +55,25 @@
 
 If region is selected before calling this function, that would be
 the region passed as an argument. The region is delimited by
-BEGIN and END"
+BEGIN and END.
+
+If `languagetool-server-mode' is active, send a request to the
+server and ends. The parameters BEGIN and END did not make any
+difference, as in this mode, the whole buffer needs to be
+checked."
   (interactive
    (if (region-active-p)
        (list (region-beginning) (region-end))
      (list (point-min) (point-max))))
-  (languagetool-console-invoke-command-region begin end)
-  (if (languagetool-console-matches-exists-p)
-      (progn
-        (message (substitute-command-keys "LangugeTool finished.
-Use \\[languagetool-correct-buffer] to correct the buffer."))
-        (languagetool-console-highlight-matches begin)
-        (run-hooks 'languagetool-error-exists-hook))
-    (progn
-      (message "LanguageTool finished.
-Found no errors.")
-      (run-hooks 'languagetool-no-error-hook))))
+  (if languagetool-server-mode
+      (languagetool-server-check)
+    (languagetool-console-check))
 
 ;;;###autoload
 (defun languagetool-correct-at-point ()
   "Pops up transient buffer to do correction at point."
   (interactive)
   (languagetool-correction-at-point))
-
-;;;###autoload
-(defun languagetool-correct-buffer ()
-  "Pops up transient buffer to do corrections at buffer."
-  (interactive)
-  (save-excursion
-    (dolist (ov (reverse (overlays-in (point-min) (point-max))))
-      (when (and (overlay-get ov 'languagetool-message)
-                 (overlay-start ov))
-        (goto-char (overlay-start ov))
-        (languagetool-correction-at-point)))))
-
-
 
 (provide 'languagetool)
 

@@ -6,7 +6,7 @@
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
 ;; Version: 0.4.3
-;; Package-Requires: ((emacs "25.1") (request "0.3.2"))
+;; Package-Requires: ((emacs "27.0") (request "0.3.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -104,7 +104,7 @@ for this package to work."
 
   (let ((arguments nil))
 
-    ;; Test if LanguageTool Console Command is a Java class and parse it
+    ;; Appends LanguageTool Console Command
     (unless (languagetool-console-class-p)
       (setq arguments (append arguments (list "-jar"))))
     (setq arguments (append arguments (list languagetool-console-command)))
@@ -170,7 +170,7 @@ The region is delimited by BEGIN and END."
   (unless languagetool-console-command
     (error "LanguageTool Console Command is empty"))
   (unless (languagetool-console-command-exists-p)
-    (error "LanguageTool could not be found"))
+    (error "LanguageTool Console Command could not be found"))
 
   (save-excursion
     (let ((status 0)
@@ -198,6 +198,22 @@ The region is delimited by BEGIN and END."
         (setq json-parsed (json-read)))
       (setq languagetool-console-output-parsed json-parsed)))
   (pop-mark))
+
+(defun languagetool-console-check (begin end)
+  "Show LanguageTool Console suggestions in the buffer.
+
+This function checks for the region delimited by BEGIN and END."
+  (languagetool-console-invoke-command-region begin end)
+  (if (languagetool-console-matches-exists-p)
+      (progn
+        (message (substitute-command-keys "LangugeTool finished.
+Use \\[languagetool-correct-buffer] to correct the buffer."))
+        (languagetool-console-highlight-matches begin)
+        (run-hooks 'languagetool-error-exists-hook))
+    (progn
+      (message "LanguageTool finished.
+Found no errors.")
+      (run-hooks 'languagetool-no-error-hook))))
 
 (defun languagetool-console-matches-exists-p ()
   "Return t if issues where found by LanguageTool or nil otherwise."
