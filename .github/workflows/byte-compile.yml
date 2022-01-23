@@ -12,10 +12,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Install emacs
-        run: sudo apt install emacs
-      - name: Install packages
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Add Emacs PPA
+        run: sudo add-apt-repository ppa:kelleyk/emacs
+      - name: Update APT repositories
+        run: sudo apt-get update
+      - name: Install Emacs
+        run: sudo apt-get install emacs27 -y
+      - name: Install required packages
         run: |
           emacs --batch --eval "(progn (require 'package) (add-to-list 'package-archives '(\"melpa\" . \"http://melpa.org/packages/\") t) (package-initialize) (package-refresh-contents) (package-install 'request))"
       - name: Byte-compile the code
