@@ -96,6 +96,9 @@ More info at http://wiki.languagetool.org/command-line-options."
 (defvar languagetool-server-open-communication-p nil
   "Set to t if server communication is open, nil otherwise.")
 
+(defvar languagetool-server-correction-p nil
+  "Set to t if correcting errors, nil otherwise.")
+
 ;; Function definitions:
 
 ;;;###autoload
@@ -303,7 +306,8 @@ used in the POST request made to the LanguageTool server."
 
 This function checks for the actual showed region of the buffer
 for suggestions."
-  (when languagetool-server-mode
+  (when (and languagetool-server-mode
+             (not languagetool-server-correction-p))
     (request
       (format "%s:%d/v2/check" languagetool-server-url languagetool-server-port)
       :type "POST"

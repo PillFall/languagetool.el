@@ -73,7 +73,11 @@ checked."
 (defun languagetool-correct-at-point ()
   "Pops up transient buffer to do correction at point."
   (interactive)
-  (languagetool-correction-at-point))
+  (when languagetool-server-mode
+    (setq languagetool-server-correction-p t))
+  (languagetool-correction-at-point)
+  (when languagetool-server-mode
+    (setq languagetool-server-correction-p nil)))
 
 (provide 'languagetool)
 
