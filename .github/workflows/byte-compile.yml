@@ -26,3 +26,5 @@ jobs:
           version: ${{ matrix.emacs_version }}
       - name: Install required packages and Byte-compile the code
         run: make ci
+        env:
+          LOAD_PATH: "-f package-initialize -L ."
