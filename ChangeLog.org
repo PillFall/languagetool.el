@@ -1,0 +1,60 @@
+* Change Log
+
+All notable changes to this project will appear in this file.
+
+The format follows [[https://keepachangelog.com/en/1.0.0/][Keep a Changelog]], and this project adheres to [[https://semver.org/spec/v2.0.0.html][Semantic
+Versioning]].
+
+
+
+** [Unreleased]
+
+** [0.4.3]
+*** Fixed
+- Error when putting `~` on LanguageTool jar path. (Fix #7)
+
+** [0.4.2]
+*** Fixed
+- Error when checking with classes on. (Fix #3)
+
+** [0.4.1]
+*** Fixed
+- Support for using class files directly. (Fix #3)
+
+** [0.4.0]
+*** Added
+- LanguageTool Server Mode has a delay of two secconds before checking the
+  buffer when idle. (Close #2)
+- LanguageTool Server Mode better support for external servers.
+
+*** Changed
+- ~languagetool-clear-buffer~ now recheck the buffer when LanguageTool Server
+  Mode is active
+- LanguageTool Server Mode check every time it attemps to first connect to a
+  server.
+
+** [0.3.0]
+*** Added
+- Support to LanguageTool HTTP server mode, and correction in real time.
+
+** [0.2.0]
+*** Added
+- Support for different error colourful faces: misspelling, grammar and style.
+
+*** Fixed
+- Jagged minibuffer message
+
+** [0.1.2]
+*** Fixed
+- Correction fails when language sets.
+
+** [0.1.1]
+*** Fixed
+- Redundant code for obtaining the java arguments.
+
+** [0.1.0]
+*** Added
+- Communication with LanguageTool.
+- Functions for the user to use.
+- Visual overlay to mark corrections.
+- Correction through minibuffer.
