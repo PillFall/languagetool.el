@@ -137,8 +137,8 @@ A example hint function:
 (defun languagetool-core-get-replacements (overlay)
   "Return the replacements of OVERLAY in a list."
   (let ((replacements (overlay-get overlay 'languagetool-replacements))
-        (replace '()))
-    (dotimes (index (length replacements) replace)
+        (replace nil))
+    (dotimes (index (length replacements))
       (setq replace (append replace
                             (list (cdr (assoc 'value (aref replacements index)))))))))
 

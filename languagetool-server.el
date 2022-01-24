@@ -29,6 +29,8 @@
 ;;; Code:
 
 (require 'json)
+(require 'cl-lib)
+(require 'request)
 (require 'languagetool-java)
 (require 'languagetool-core)
 (require 'languagetool-issue)
@@ -152,7 +154,7 @@ Don't use this function, use `languagetool-server-mode' instead."
                 (zero-or-more
                  (in alnum ?_ ?$))
                 line-end)))
-    (string-match-p regex languagetool-console-command)))
+    (string-match-p regex languagetool-server-command)))
 
 (defun languagetool-server-command-exists-p ()
   "Return t is `languagetool-console-command' can be used or exists.
@@ -249,7 +251,7 @@ Optional parameter TRY is the try number before Emacs show an error."
                   (setq languagetool-server-open-communication-p t)
                   (languagetool-server-check)))
       :error (cl-function
-              (lambda (&rest args &key _error-thrown &allow-other-keys)
+              (lambda (&key _error-thrown &allow-other-keys)
                 (when (or
                        languagetool-server-mode
                        (not languagetool-server-open-communication-p))
@@ -312,7 +314,7 @@ for suggestions."
                   (languagetool-server-highlight-matches
                    (request-response-data response))))
       :error (cl-function
-              (lambda (&rest args &key error-thrown &allow-other-keys)
+              (lambda (&key error-thrown &allow-other-keys)
                 (languagetool-server-mode -1)
                 (error
                  "[Fatal Error] LanguageTool closed and got error: %S"
@@ -336,4 +338,5 @@ LanguageTool Server."
            correction))))))
 
 (provide 'languagetool-server)
+
 ;;; languagetool-server.el ends here

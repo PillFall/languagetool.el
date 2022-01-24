@@ -27,6 +27,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'languagetool-core)
 
 ;; Variable definitions:

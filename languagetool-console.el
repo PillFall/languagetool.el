@@ -28,8 +28,10 @@
 
 ;;; Code:
 
-(require 'languagetool-java)
+(require 'json)
 (require 'languagetool-core)
+(require 'languagetool-issue)
+(require 'languagetool-java)
 
 ;; Group definition:
 

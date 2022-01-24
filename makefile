@@ -1,17 +1,66 @@
-EMACS = emacs
+## Compiling executable variables ####################################
 
-EMACS_FLAGS = -Q --batch --eval "(setq byte-compile-error-on-warn t)" -f package-initialize -L . -f batch-byte-compile
+-include env.mk
 
-SOURCES = $(filter-out %-autoloads.el %-pkg.el, $(wildcard *.el))
+LOAD_PATH ?= -L .
+EMACSBIN ?= emacs
+BATCH = $(EMACSBIN) -Q --batch $(LOAD_PATH)
 
-TARGETS = $(SOURCES:.el=.elc)
+PKG = languagetool
+RQD_PKG  = request
 
-byte-compiled: $(TARGETS)
+all: lisp
 
-$(TARGETS): $(SOURCES)
+## Source files ######################################################
+
+ELS  = $(PKG)-core.el
+ELS += $(PKG)-issue.el
+ELS += $(PKG)-java.el
+ELS += $(PKG)-correction.el
+ELS += $(PKG)-console.el
+ELS += $(PKG)-server.el
+ELS += $(PKG).el
+ELCS = $(ELS:.el=.elc)
+
+## Build order #######################################################
+
+$(PKG)-core.el:
+$(PKG)-issue.el:
+$(PKG)-java.el:
+$(PKG)-correction.el: $(PKG)-core.el
+$(PKG)-console.el: $(PKG)-core.el $(PKG)-issue.el $(PKG)-java.el
+$(PKG)-server.el: $(PKG)-core.el $(PKG)-issue.el $(PKG)-java.el
+$(PKG).el:  $(PKG)-correction.el $(PKG)-console.el $(PKG)-server.el
+
+## Build #############################################################
+
+lisp: $(ELCS)
 
 %.elc: %.el
-	$(EMACS) $(EMACS_FLAGS) $<
+	@printf "Compiling $<\n"
+	@$(BATCH) \
+	--eval "(when (file-exists-p \"$@\") (delete-file \"$@\"))" \
+    --eval "(setq byte-compile-error-on-warn t)" \
+	-f batch-byte-compile $<
 
 clean:
-	rm *.elc
+	@printf "Cleaning byte compiled lisp...\n"
+	@rm -f *.elc
+
+## CI integration ####################################################
+
+ci: require lisp
+
+require: $(RQD_PKG)
+
+request:
+	@printf "Installing $@\n"
+	@$(BATCH) \
+	--eval "(progn \
+	(require 'package) \
+	(add-to-list \
+        'package-archives \
+        '(\"melpa\" . \"http://melpa.org/packages/\") t) \
+    (package-initialize) \
+	(package-refresh-contents) \
+	(package-install 'request))"

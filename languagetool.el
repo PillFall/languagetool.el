@@ -35,7 +35,9 @@
 
 ;;; Code:
 
-(require 'json)
+(require 'languagetool-correction)
+(require 'languagetool-console)
+(require 'languagetool-server)
 
 ;; Group definition:
 
@@ -45,9 +47,7 @@
   :prefix "languagetool-"
   :group 'applications)
 
-(require 'languagetool-correction)
-(require 'languagetool-console)
-(require 'languagetool-server)
+;; Function definitions:
 
 ;;;###autoload
 (defun languagetool-check (begin end)
@@ -67,7 +67,7 @@ checked."
      (list (point-min) (point-max))))
   (if languagetool-server-mode
       (languagetool-server-check)
-    (languagetool-console-check))
+    (languagetool-console-check begin end)))
 
 ;;;###autoload
 (defun languagetool-correct-at-point ()

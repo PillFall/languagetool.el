@@ -11,17 +11,18 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        emacs_version:
+          - 27.1
+          - 27.2
+          - snapshot
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
-      - name: Add Emacs PPA
-        run: sudo add-apt-repository ppa:kelleyk/emacs
-      - name: Update APT repositories
-        run: sudo apt-get update
-      - name: Install Emacs
-        run: sudo apt-get install emacs27 -y
-      - name: Install required packages
-        run: |
-          emacs --batch --eval "(progn (require 'package) (add-to-list 'package-archives '(\"melpa\" . \"http://melpa.org/packages/\") t) (package-initialize) (package-refresh-contents) (package-install 'request))"
-      - name: Byte-compile the code
-        run: make
+      - name: Install emacs
+        uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs_version }}
+      - name: Install required packages and Byte-compile the code
+        run: make ci
