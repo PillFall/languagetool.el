@@ -140,7 +140,8 @@ A example hint function:
         (replace nil))
     (dotimes (index (length replacements))
       (setq replace (append replace
-                            (list (cdr (assoc 'value (aref replacements index)))))))))
+                            (list (cdr (assoc 'value (aref replacements index)))))))
+    replace))
 
 (provide 'languagetool-core)
 
