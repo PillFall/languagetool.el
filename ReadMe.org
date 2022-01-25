@@ -17,7 +17,7 @@ for your text and which kind of issue is, by following a colour key.
 LanguageTool standalone version comes with tree different executables written in
 Java:
 
-- The first is the *GUI*, to use LanguageTool directly.
+- The first is the /GUI/, to use LanguageTool directly.
 - The other is the /Command Line Interface/, to check text in this way.
 - And the final one is the /Server/, to create an HTTP server to check text via
   requests.
@@ -38,12 +38,12 @@ You'll need (obviously) LanguageTool itself, you can download it in this [[https
 or, if available, with your package manager.
 
 If you download LanguageTool Zip file, extract the contents in a folder you
-want; for example ~~/.languagetool/~, if you use LanguageTool with other tools
-could be a great option.
+want; for example ~/home/pillfall/.languagetool/~, if you use LanguageTool with
+other tools could be a great option.
 
 In case you use your package manager, find out if it download the class files or
 the standalone executable and where it put them, this is useful for later
-configuration. For example /ArchLinux/ download the classfiles and puts them in
+configuration. For example /ArchLinux/ download the class files and puts them in
 the ~/usr/share/languagetool~ and ~/usr/share/java/languagetool~ directories.
 
 *** Obtaining the package
@@ -58,7 +58,7 @@ configuration, enabling all current features, would be:
   :ensure t
   :defer t
   :commands (languagetool-check
-             languagetool-clear-buffer
+             languagetool-clear
              languagetool-correct-at-point
              languagetool-correct-buffer
              languagetool-set-language
@@ -73,7 +73,7 @@ configuration, enabling all current features, would be:
 
 If you want to install it from source, you can clone this repository and do all
 the configuration manually (create a ~package.el~, generate ~autoloads.el~,
-etc.). Right now, there is no installation steps following this approach, so
+etc.). Right now, there are no installation steps following this approach, so
 you'll need to know what you are doing, but there is a handy makefile which byte
 compiles all the elisp files.
 
@@ -112,14 +112,14 @@ will call LanguageTool from its class, so set ~languagetool-java-arguments~,
       languagetool-server-command "org.languagetool.server.HTTPServer")
 #+END_SRC
 
-By default, the correction language is ~"auto"~ and it is buffer local, meaning
+By default, the correction language is ~auto~ and it is buffer local, meaning
 that you could check in different languages different files, if you want to
 change the language, you could use [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Specifying-File-Variables.html][local file variables]] to define the language
 to use in that buffer, setting the variable ~languagetool-correction-language~,
 or call ~languagetool-set-language~.
 
-Any other configuration options can be find at the /customize/ interface or in
-the docs folder.
+If you want to know more customization options you can find those at the
+/customize/ interface or expore the docs folder.
 
 
 
@@ -130,6 +130,9 @@ start checking your text. So, you can use either ~console~ mode or ~server~
 mode.
 
 *** ~console~ Mode
+:PROPERTIES:
+:CUSTOM_ID: console-mode
+:END:
 
 In this mode, when you start checking, the first thing you need to do is call
 ~languagetool-check~. This will invoke LanguageTool in the current region, if
@@ -167,7 +170,7 @@ in the communication to the LanguageTool HTTP API.
 
 After your server is running, you can toggle on the ~languagetool-server-mode~.
 LanguageTool then starts to highlight all its suggestions in the available
-portion of the buffer. You use the same method as in [[~console~ Mode][~console~ mode]] to correct
+portion of the buffer. You use the same method as in [[#console-mode][~console~ mode]] to correct
 your text.
 
 If you finish, just toggle off the ~languagetool-server-mode~, it will take all
