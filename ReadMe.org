@@ -1,26 +1,29 @@
 * languagetool.el
 
-#+BEGIN_CENTER
 [[https://melpa.org/#/languagetool][https://melpa.org/packages/languagetool-badge.svg]]
 [[https://stable.melpa.org/#/languagetool][https://stable.melpa.org/packages/languagetool-badge.svg]]
 [[https://github.com/PillFall/Emacs-LanguageTool.el/actions/workflows/byte-compile.yml][https://github.com/PillFall/Emacs-LanguageTool.el/workflows/build/badge.svg]]
-#+END_CENTER
 
-Use LanguageTool as your Emacs grammar, spelling and styling
-corrector.
+** Introduction
 
-#+BEGIN_CENTER
-#+CAPTION: Package in action. Text extracted from LanguageTool Homepage.
-[[https://user-images.githubusercontent.com/30298743/150847182-6f317490-e2f1-4505-8fa4-32984c54ef29.png]]
-#+END_CENTER
+LanguageTool is a free and open-source multilingual grammar, style, and spell
+checker with support for more than 30 languages. So, why not use it as your
+Emacs grammar and spell check tool. That is what this package is for.
 
-This package is based on [[https://github.com/mhayashi1120/Emacs-langtool/][mhayashi1120 Emacs-Langtool]], it's intended to make a
-pipeline through Emacs and parse JSON output, making it incompatible with the
-original version, that's why this package is not a forked version and it's made
-from scratch.
+*languagetool.el* is a tool written for Emacs keeping in mind integrity and
+display. In a way that you can see all the issues which LanguageTool generates
+for your text and which kind of issue is, by following a colour key.
 
-LanguageTool is an open source proof-reading tool built in Java which
-supports more than 30 languages.
+LanguageTool standalone version comes with tree different executables written in
+Java:
+
+- The first is the *GUI*, to use LanguageTool directly.
+- The other is the /Command Line Interface/, to check text in this way.
+- And the final one is the /Server/, to create an HTTP server to check text via
+  requests.
+
+*languagetool.el* creates a wrapper for two of these three tools, the /CLI/
+(~console~ module) and the /Server/ (~server~ module).
 
 
 
@@ -28,140 +31,143 @@ supports more than 30 languages.
 
 *** Obtaining the prerequisites
 
-The first thing you need is *Java*, so download and install it.
+As LanguageTool is code in /Java/, you need to install that on your system.
+LanguageTool requires Java 8 or later to work.
 
-You also need to download [[https://languagetool.org/download/][*LanguageTool*]] from its official page.
+You'll need (obviously) LanguageTool itself, you can download it in this [[https://languagetool.org/download/][link]]
+or, if available, with your package manager.
 
-After download, extract the contents in a folder you want (e.g.
-~~/.languagetool/~).
+If you download LanguageTool Zip file, extract the contents in a folder you
+want; for example ~~/.languagetool/~, if you use LanguageTool with other tools
+could be a great option.
 
+In case you use your package manager, find out if it download the class files or
+the standalone executable and where it put them, this is useful for later
+configuration. For example /ArchLinux/ download the classfiles and puts them in
+the ~/usr/share/languagetool~ and ~/usr/share/java/languagetool~ directories.
+
+*** Obtaining the package
+
+You can install the package using the MELPA repository or via ~use-package~.
+
+In case you use the latter and get the LanguageTool Zip, one default
+configuration, enabling all current features, would be:
+
+#+BEGIN_SRC elisp
+(use-package languagetool
+  :ensure t
+  :defer t
+  :commands (languagetool-check
+             languagetool-clear-buffer
+             languagetool-correct-at-point
+             languagetool-correct-buffer
+             languagetool-set-language
+             languagetool-server-mode
+             languagetool-server-start
+             languagetool-server-stop)
+  :config
+  (setq languagetool-java-arguments '("-Dfile.encoding=UTF-8")
+        languagetool-console-command "~/.languagetool/languagetool-commandline.jar"
+        languagetool-server-command "~/.languagetool/languagetool-server.jar"))
+#+END_SRC
+
+If you want to install it from source, you can clone this repository and do all
+the configuration manually (create a ~package.el~, generate ~autoloads.el~,
+etc.). Right now, there is no installation steps following this approach, so
+you'll need to know what you are doing, but there is a handy makefile which byte
+compiles all the elisp files.
 
 *** Configuring the package
 
-Next you need to set the package configuration. First we add the path
-to the ~languagetool-commandline.jar~ file in your ~.emacs~ file like:
+To get this package to work, you'll need to configure some variables.
+
+First you must configure Java to accept files in UTF-8, for that purpose, set
+~languagetool-java-arguments~ using /customize/ interface or with elisp like
+follows:
 
 #+BEGIN_SRC elisp
-(setq languagetool-language-tool-jar
-      "~/.languagetool/languagetool-commandline.jar")
+(setq languagetool-console-command '("-Dfile.encoding=UTF-8"))
 #+END_SRC
 
-Or via customize.  It's highly encouraged to use full path instead.
+Then you need to tell the package how do you plan to call LanguageTool.
 
-If you are going to use the LanguageTool HTTP Server instead, you need
-to add to your ~.emacs~ file:
+If you download, extracted and plan to use the LanguageTool Zip, set
+~languagetool-console-command~ and ~languagetool-server-command~ using
+/customize/ interface or with elisp like follows:
 
 #+BEGIN_SRC elisp
-(setq languagetool-server-language-tool-jar
-      "~/.languagetool/languagetool-server.jar")
-(languagetool-server-start)
+(setq languagetool-console-command "~/.languagetool/languagetool-commandline.jar"
+      languagetool-server-command "~/.languagetool/languagetool-server.jar")
 #+END_SRC
 
-It's recommended to add a Java flag to process the files in UTF-8, so you should
-add to your ~.emacs~:
+If you are going to use a package manager, and it download the class files, you
+will call LanguageTool from its class, so set ~languagetool-java-arguments~,
+~languagetool-console-command~ and ~languagetool-server-command~ using
+/customize/ interface or with elisp like follows:
 
 #+BEGIN_SRC elisp
-(setq languagetool-java-arguments '("-Dfile.encoding=UTF-8"))
+(setq languagetool-java-arguments '("-Dfile.encoding=UTF-8"
+                                    "-cp" "/usr/share/languagetool:/usr/share/java/languagetool/*")
+      languagetool-console-command "org.languagetool.commandline.Main"
+      languagetool-server-command "org.languagetool.server.HTTPServer")
 #+END_SRC
 
-And finally you should tell which language are you using by default in
-your ~.emacs~ file like:
+By default, the correction language is ~"auto"~ and it is buffer local, meaning
+that you could check in different languages different files, if you want to
+change the language, you could use [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Specifying-File-Variables.html][local file variables]] to define the language
+to use in that buffer, or call ~languagetool-set-language~.
 
-#+BEGIN_SRC elisp
-(setq languagetool-default-language "en-GB")
-#+END_SRC
-
-You can change this latter using ~languagetool-set-language~ function.
-
-
-
-** Usage
-
-There are 5 commands than can be used directly and bound to a key if
-desired.
-
-- ~languagetool-check~ To check the active region or the buffer.
-- ~languagetool-clear-buffer~ To delete all the buffer highlights.
-- ~languagetool-correct-at-point~ To correct the warning at point.
-- ~languagetool-correct-buffer~ To correct the whole buffer.
-- ~languagetool-set-language~ To change correction language.
-
-For this package the suggested keybinding is:
-
-#+BEGIN_SRC elisp
-(global-set-key (kbd "C-c l c") 'languagetool-check)
-(global-set-key (kbd "C-c l d") 'languagetool-clear-buffer)
-(global-set-key (kbd "C-c l p") 'languagetool-correct-at-point)
-(global-set-key (kbd "C-c l b") 'languagetool-correct-buffer)
-(global-set-key (kbd "C-c l l") 'languagetool-set-language)
-#+END_SRC
-
-Once you are correcting with build in functions it will pop-up a
-correction buffer at the minibuffer, you only need to choose.
-
-Or you can use a LanguageTool HTTP Server with
-~languagetool-server-mode~.  In this mode the function
-~languagetool-check~ will be undefined in the current buffer to
-prevent checking with another tool.  `languagetool-clear-buffer`
-clears and recheck the buffer in case of needed.  The other functions
-works as usual.
+Any other configuration options can be find at the /customize/ interface or in
+the docs folder.
 
 
 
-** Customizable Variables
+** Quick Usage
 
-For this package there are a few customizable variables that should be
-set in order to take control of LanguageTool suggestions.
+When you end customizing the packages (faces, languages, etc.). You can now
+start checking your text. So, you can use either ~console~ mode or ~server~
+mode.
 
-- ~languagetool-java-bin~ Sets the path to the JAVA executable, if it
-  is in `PATH` only it's name is needed. Set to ~"java"~ by default.
-- ~languagetool-java-arguments~ If you need to pass arguments to JAVA
-  set this variable.  It must be a list of strings, one string for
-  each argument without spaces.
+*** ~console~ Mode
 
-  e.g.
+In this mode, when you start checking, the first thing you need to do is call
+~languagetool-check~. This will invoke LanguageTool in the current region, if
+any, and then highlight all the suggestions made by the tool. If there is no
+region, the whole available portion of the buffer will check.
 
-  #+BEGIN_SRC elisp
-  (setq languagetool-java-arguments '("-flag1" "-flag2"))
-  ;; or
-  (setq languagetool-java-arguments '("-flag" "argumentforflag")
-  #+END_SRC
-- ~languagetool-language-tool-class~ Tell the package that the package
-  will use the class files directly.  Set to ~nil~ by default.
-- ~languagetool-language-tool-jar~ Sets the path of the LanguageTool
-  command line jar file.  It's recommended to put the full path.
-- ~languagetool-language-tool-arguments~ Sets arguments to pass to
-  LanguageTool.  It must be a list of strings, one string for each
-  argument without spaces.
+This function is synchronous. Therefore, it blocks Emacs until LanguageTool done
+with your text. This is the right behaviour, as LanguageTool is a bit slow
+checking text in this mode, so it prevents you from changing the text while
+checking.
 
-  e.g.
+After LanguageTool highlights all its suggestions, now you can correct your
+text, then put your cursor on the underlined word and call
+~languagetool-correct-at-point~, this will pop up
+a transient minibuffer with all the suggestions, choose the one fits your needs,
+and you are ready to go. There is also a buffer wide correction function, called
+~languagetool-correct-buffer~, you can call it if you want to check all the
+buffer, suggestion by suggestion.
 
-  #+BEGIN_SRC elisp
-  (setq languagetool-language-tool-arguments '("-flag1" "-flag2"))
-  ;; or
-  (setq languagetool-language-tool-arguments '("-flag" "argumentforflag")
-  #+END_SRC
-- ~languagetool-server-language-tool-jar~ Sets the path of the
-  LanguageTool Server jar file.  It's recommended to put the full
-  path.
-- ~languagetool-default-language~ Sets the LanguageTool correction
-  language.  It can be changed via command with
-  ~languagetool-set-language~.
-- ~languagetool-mother-tongue~ If set LanguageTool behaviour change to
-  correct using ~languagetool-default-language~ but being aware of
-  false friends.
-- ~languagetool-disabled-rules~ Tells LanguageTool to ignore these
-  rules when checking text.
-- ~languagetool-local-disabled-rules~ As ~languagetool-disabled-rules~
-  tells LanguageTool to ignore these rules when checking text but it's
-  buffer local, so if you want you can set it in your local variables
-  comment.
-- ~languagetool-server-url~ Tells LanguageTool Server mode to send
-  POST request to this url.  Set to ~"http://localhost"~ by default.
-- ~languagetool-server-port~ Tells LanguageTool Server mode to send
-  Post request to this port.  Set to ~8081~ by default.
-- ~languagetool-server-delayed-commands~ A list of hooks for sending a
-  request to the server.
-- ~languegetool-server-request-delay~ Controls the number of seconds
-  while idle before this package sends a new request to the
-  LanguegeTool Server.
+If you finish, and don't want to see any more suggestions, call
+~languagetool-clear-suggestions~ and all the highlighting will disappear.
+
+*** ~server~ Mode
+
+In this mode, you first start having a running the server. To initialize it, you
+can call ~languagetool-server-start~, then you'll have a running server attached
+to Emacs (If you close Emacs, it's over). This server starts to listen in port
+~8081~ by default. You can change it by setting ~languagetool-server-port~ to
+another value.
+
+If you are going to use a server with another configuration, like servers not
+located in your localhost, you must set ~languagetool-server-host~ and
+~languagetool-server-port~ to whatever adjust your needs. These variables play
+in the communication to the LanguageTool HTTP API.
+
+After your server is running, you can toggle on the ~languagetool-server-mode~.
+LanguageTool then starts to highlight all its suggestions in the available
+portion of the buffer. You use the same method as in [[~console~ Mode][~console~ mode]] to correct
+your text.
+
+If you finish, just toggle off the ~languagetool-server-mode~, it will take all
+the LanguageTool suggestions with itself.
