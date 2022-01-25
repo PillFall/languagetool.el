@@ -115,7 +115,8 @@ will call LanguageTool from its class, so set ~languagetool-java-arguments~,
 By default, the correction language is ~"auto"~ and it is buffer local, meaning
 that you could check in different languages different files, if you want to
 change the language, you could use [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Specifying-File-Variables.html][local file variables]] to define the language
-to use in that buffer, or call ~languagetool-set-language~.
+to use in that buffer, setting the variable ~languagetool-correction-language~,
+or call ~languagetool-set-language~.
 
 Any other configuration options can be find at the /customize/ interface or in
 the docs folder.

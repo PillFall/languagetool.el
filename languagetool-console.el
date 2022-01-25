@@ -120,9 +120,9 @@ for this package to work."
                             (list "--json")))
 
     ;; Appends the correction language information
-    (if (string= languagetool-default-language "auto")
+    (if (string= languagetool-correction-language "auto")
         (setq arguments (append arguments (list "--autoDetect")))
-      (setq arguments (append arguments (list "--language" languagetool-default-language))))
+      (setq arguments (append arguments (list "--language" languagetool-correction-language))))
 
     ;; Appends the mother tongue information
     (when (stringp languagetool-mother-tongue)

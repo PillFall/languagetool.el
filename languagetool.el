@@ -50,6 +50,21 @@
 ;; Function definitions:
 
 ;;;###autoload
+(defun languagetool-set-language (lang)
+  "Set LanguageTool correction language to LANG."
+  (interactive
+   (list (read-string "LanguageTool new language: "
+                      (alist-get languagetool-correction-language languagetool-core-languages)
+                      languagetool-correction-language-history
+                      (let (languages-choices)
+                        (dolist (language
+                                 languagetool-core-languages
+                                 (reverse languages-choices))
+                          (push (cdr language) languages-choices))))))
+  (setq languagetool-correction-language (or (car (rassoc lang languagetool-core-languages))
+                                             lang)))
+
+;;;###autoload
 (defun languagetool-check (begin end)
   "Correct the current buffer and highlight errors.
 

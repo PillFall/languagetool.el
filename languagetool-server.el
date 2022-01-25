@@ -270,7 +270,7 @@ used in the POST request made to the LanguageTool server."
     ;; Appends the correction language information
     (setq arguments (json-add-to-object arguments
                                         "language"
-                                        languagetool-default-language))
+                                        languagetool-correction-language))
 
     ;; Appends the mother tongue information
     (when (stringp languagetool-mother-tongue)

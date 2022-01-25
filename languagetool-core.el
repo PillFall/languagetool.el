@@ -29,16 +29,18 @@
 
 ;; Variable definitions:
 
-(defcustom languagetool-default-language "auto"
+
+(defcustom languagetool-correction-language "auto"
   "LanguageTool correction and checking language.
 
 This is a string which indicate the language LanguageTool assume
 the text is written in or \"auto\" for automatic calculation."
   :group 'languagetool
   :local t
+  :safe #'languagetool-core-safe-language
   :type '(choice
           string
-          (const auto)))
+          (const "auto")))
 
 (defcustom languagetool-mother-tongue nil
   "Your mother tongue for being aware of false friends.
@@ -54,6 +56,68 @@ which can be mistranslated."
   :type '(choice
           (const nil)
           string))
+
+(defcustom languagetool-core-languages
+  '(("auto" . "Automatic Detection")
+    ("ar" . "Arabic")
+    ("ast-ES" . "Asturian")
+    ("be-BY" . "Belarusian")
+    ("br-FR" . "Breton")
+    ("ca-ES" . "Catalan")
+    ("ca-ES-valencia" . "Catalan (Valencian)")
+    ("zh-CN" . "Chinese")
+    ("da-DK" . "Danish")
+    ("nl" . "Dutch")
+    ("nl-BE" . "Dutch (Belgium)")
+    ("en" . "English")
+    ("en-AU" . "English (Australian)")
+    ("en-CA" . "English (Canadian)")
+    ("en-GB" . "English (GB)")
+    ("en-NZ" . "English (New Zealand)")
+    ("en-ZA" . "English (South African)")
+    ("en-US" . "English (US)")
+    ("eo" . "Esperanto")
+    ("fr" . "French")
+    ("gl-ES" . "Galician")
+    ("de" . "German")
+    ("de-AT" . "German (Austria)")
+    ("de-DE" . "German (Germany)")
+    ("de-CH" . "German (Swiss)")
+    ("el-GR" . "Greek")
+    ("ga-IE" . "Irish")
+    ("it" . "Italian")
+    ("ja-JP" . "Japanese")
+    ("km-KH" . "Khmer")
+    ("nb" . "Norwegian (Bokmål)")
+    ("no" . "Norwegian (Bokmål)")
+    ("fa" . "Persian")
+    ("pl-PL" . "Polish")
+    ("pt" . "Portuguese")
+    ("pt-AO" . "Portuguese (Angola preAO)")
+    ("pt-BR" . "Portuguese (Brazil)")
+    ("pt-MZ" . "Portuguese (Moçambique preAO)")
+    ("pt-PT" . "Portuguese (Portugal)")
+    ("ro-RO" . "Romanian")
+    ("ru-RU" . "Russian")
+    ("de-DE-x-simple-language" . "Simple German")
+    ("sk-SK" . "Slovak")
+    ("sl-SI" . "Slovenian")
+    ("es" . "Spanish")
+    ("es-AR" . "Spanish (voseo)")
+    ("sv" . "Swedish")
+    ("tl-PH" . "Tagalog")
+    ("ta-IN" . "Tamil")
+    ("uk-UA" . "Ukrainian"))
+  "LanguageTool available languages for correction.
+
+Each element is a cons-cell with the form (CODE . NAME)."
+  :group 'languagetool
+  :type '(alist
+          :key-type (string :tag "Code")
+          :value-type (string :tag "Name")))
+
+(defvar-local languagetool-correction-language-history nil
+  "Buffer local LanguageTool correction language history.")
 
 (defcustom languagetool-disabled-rules nil
   "LanguageTool global disabled rules."
@@ -79,8 +143,8 @@ The function must search for overlays at point. You must pass the
 function symbol.
 
 A example hint function:
-\(defun `languagetool-core-hint-default-function' ()
-  \"Default hint display function.\"
+\(defun hint-function ()
+  \"Hint display function.\"
   (dolist (ov (overlays-at (point)))
     (when (overlay-get ov 'languagetool-message)
       (unless (current-message)
@@ -108,6 +172,10 @@ A example hint function:
   "Idle timer that shows the hint in the minibuffer.")
 
 ;; Function defintions:
+
+(defun languagetool-core-safe-language (lang)
+  "Return non-nil if LANG is safe to use."
+  (assoc lang languagetool-core-languages))
 
 (defun languagetool-core-clear-buffer ()
   "Deletes all buffer overlays."
