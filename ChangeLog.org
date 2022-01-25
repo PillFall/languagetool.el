@@ -8,6 +8,29 @@ Versioning]].
 
 
 ** [Unreleased]
+*** Added
+- ~languagetool-set-language~ has its own history and autocompletion.
+- Now bundles a customizable alist which holds all the available languages.
+- New and better documentation in ReadMe file.
+
+*** Changed
+- ~languagetool-default-language~ is now ~languagetool-correction-language~ and
+  it's buffer local.
+- ~languagetool-language-tool-jar~ is now ~languagetool-console-command~.
+- ~langaugetool-server-language-tool-jar~ is now ~languagetool-server-command~.
+- ~languagetool-language-tool-arguments~ is now ~languagetool-console-command~.
+- ~languagetool-check~ recheck the buffer in LanguageTool Server Mode.
+- ~languagetool-clear-buffer~ is now ~languagetool-clear~.
+
+*** Removed
+- LanguageTool Server Mode only checks when idle after 3 secconds by default.
+- ~languagetool-language-tool-class~ is no longer necessary for class detection.
+- ~languagetool-server-delayed-commands~ is no longer available.
+- ~languagetool-clear-buffer~ no recheck the buffer when LanguageTool Server
+  Mode is active.
+
+*** Fixed
+- If using LanguageTool classes, fails invoking LanguageTool.
 
 ** [0.4.3]
 *** Fixed
@@ -29,7 +52,7 @@ Versioning]].
 
 *** Changed
 - ~languagetool-clear-buffer~ now recheck the buffer when LanguageTool Server
-  Mode is active
+  Mode is active.
 - LanguageTool Server Mode check every time it attemps to first connect to a
   server.
 
