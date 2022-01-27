@@ -5,7 +5,6 @@
     alt="languagetool.el logo" />
 </p>
 <h1 align="center">languagetool.el</h1>
-<hr />
 <p align="center">
   <img
     src="https://user-images.githubusercontent.com/30298743/151289330-d298348c-5052-446f-9098-c888df631b51.png"

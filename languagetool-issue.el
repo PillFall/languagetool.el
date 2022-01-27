@@ -1,11 +1,11 @@
 ;;; languagetool-issue.el --- LanguegeTool issue faces -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020  Joar Buitrago
+;; Copyright (C) 2020-2022  Joar Buitrago
 
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 0.4.3
+;; Version: 1.0.0
 ;; Package-Requires: ((emacs "27.0") (request "0.3.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
