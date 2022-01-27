@@ -84,15 +84,11 @@ Get the information about corrections from OVERLAY."
     msg))
 
 (defun languagetool-correction-apply (pressed-key overlay)
-  "Correct an delete the overlay with LanguageTool Suggestion.
+  "Correct text marked by LanguageTool with user choice.
 
-The selected correction is given by PRESSED-KEY and the
-position, and suggestions are given by OVERLAY."
+PRESSED-KEY is the index of the suggestion in the array contained
+on OVERLAY."
   (cond
-   ((char-equal ?\C-g pressed-key)
-    (progn
-      (goto-char (overlay-end overlay))
-      (error "Quit")))
    ((char-equal ?\C-i pressed-key)
     (progn
       (goto-char (overlay-end overlay))
@@ -100,8 +96,7 @@ position, and suggestions are given by OVERLAY."
    ((char-equal ?\C-s pressed-key)
     (goto-char (overlay-end overlay)))
    ((not (cl-position pressed-key languagetool-correction-keys))
-    (progn
-      (error "Key `%c' cannot be used" pressed-key)))
+    (error "Key `%c' cannot be used" pressed-key))
    (t
     (let ((size (length (languagetool-core-get-replacements overlay)))
           (pos (cl-position pressed-key languagetool-correction-keys)))
@@ -113,8 +108,7 @@ position, and suggestions are given by OVERLAY."
 
 (defun languagetool-correction-at-point ()
   "Show issue at point and try to apply suggestion."
-  (let (pressed-key
-        (inhibit-quit t))
+  (let (pressed-key)
     (dolist (ov (overlays-at (point)))
       (when (overlay-get ov 'languagetool-message)
         (message nil)

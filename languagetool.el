@@ -70,6 +70,7 @@
 
 If `languagetool-server-mode' is active, it would rise an error,
 as you are not suppose to call this function."
+  (interactive)
   (when languagetool-server-mode
     (error "Do not use this function in server mode
 If you want to clear the suggestions turn off the server mode)"))
@@ -102,6 +103,26 @@ checked."
   (when languagetool-server-mode
     (setq languagetool-server-correction-p t))
   (languagetool-correction-at-point)
+  (when languagetool-server-mode
+    (setq languagetool-server-correction-p nil)))
+
+;;;###autoload
+(defun languagetool-correct-buffer ()
+  "Pops up transient buffer to do correction in the whole buffer."
+  (interactive)
+  (when languagetool-server-mode
+    (setq languagetool-server-correction-p t))
+  (condition-case err
+      (save-excursion
+        (dolist (ov (reverse (overlays-in (point-min) (point-max))))
+          (when (and (overlay-get ov 'languagetool-message)
+                     (overlay-start ov))
+            (goto-char (overlay-start ov))
+            (languagetool-correction-at-point))))
+    ((quit error)
+     (when languagetool-server-mode
+       (setq languagetool-server-correction-p nil))
+     (error "%s" (error-message-string err))))
   (when languagetool-server-mode
     (setq languagetool-server-correction-p nil)))
 
