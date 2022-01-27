@@ -76,19 +76,24 @@
   "LanguageTool face for style errors."
   :group 'languagetool-issue)
 
+(defcustom languagetool-issue-face-alist
+  '(("misspelling" . languagetool-issue-misspelling)
+    ("grammar" . languagetool-issue-grammar)
+    ("style" . languagetool-issue-style))
+  "Alist with issue type associated with it's face.
+
+Each element is a cons cell with the form (ISSUE_TYPE . FACE_NAME)."
+  :group 'languagetool-issue
+  :type '(alist
+          :key-type (string :tag "Issue Type")
+          :value-type (face :tag "Face Name")))
+
 ;; Function definitions:
 
 (defun languagetool-issue-get-face (issue-type)
   "Return the face for ISSUE-TYPE."
-  (cond
-   ((string= issue-type "misspelling")
-    'languagetool-issue-misspelling)
-   ((string= issue-type "grammar")
-    'languagetool-issue-grammar)
-   ((string= issue-type "style")
-    'languagetool-issue-style)
-   (t
-    'languagetool-issue-default)))
+  (or (cdr (assoc issue-type languagetool-issue-face-alist))
+      'languagetool-issue-default))
 
 (defun languagetool-issue-create-overlay (begin end correction)
   "Create an overlay for corrections.
