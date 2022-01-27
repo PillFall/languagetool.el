@@ -1,8 +1,28 @@
-* languagetool.el
-
-[[https://melpa.org/#/languagetool][https://melpa.org/packages/languagetool-badge.svg]]
-[[https://stable.melpa.org/#/languagetool][https://stable.melpa.org/packages/languagetool-badge.svg]]
-[[https://github.com/PillFall/Emacs-LanguageTool.el/actions/workflows/byte-compile.yml][https://github.com/PillFall/Emacs-LanguageTool.el/workflows/build/badge.svg]]
+#+BEGIN_HTML
+<h1 align="center">languagetool.el</h1>
+<p align="center">
+  <img
+    src="[[https://user-images.githubusercontent.com/30298743/151280544-ee2dd001-4959-4f2b-bbb9-d15e226de601.svg]]"
+    alt="languagetool.el logo" />
+</p>
+<p align="center">
+  <a href="https://melpa.org/#/languagetool">
+    <img
+      src="https://melpa.org/packages/languagetool-badge.svg"
+      alt="MELPA Version" />
+  </a>
+  <a href="https://stable.melpa.org/#/languagetool">
+    <img
+      src="https://stable.melpa.org/packages/languagetool-badge.svg"
+      alt="MELPA Stable Version" />
+  </a>
+  <a href="https://github.com/PillFall/Emacs-LanguageTool.el/actions/workflows/byte-compile.yml">
+    <img
+      src="https://github.com/PillFall/Emacs-LanguageTool.el/workflows/build/badge.svg"
+      alt="CI Status" />
+  </a>
+</p>
+#+END_HTML
 
 ** Introduction
 
