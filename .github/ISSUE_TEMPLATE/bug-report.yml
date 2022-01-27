@@ -1,0 +1,50 @@
+name: Bug Report
+description: Create a new issue to file a bug report
+title: 🐛 
+labels:
+  - bug
+body:
+  - type: input
+    id: emacs-version
+    attributes:
+      label: What version of Emacs are you running?
+      description: Use `M-x emacs-version` to get it
+    validations:
+      required: true
+  - type: input
+    id: languagetool-version
+    attributes:
+      label: What version of LanguageTool are you running?
+      description: Run `languagetool` and check it in about
+    validations:
+      required: true
+  - type: input
+    id: package-version
+    attributes:
+      label: What version of this package are you running?
+      description: You can find it in the header comments of your `.el` files
+    validations:
+      required: true
+  - type: textarea
+    id: current-behaviour
+    attributes:
+      label: What is the current behaviour?
+      description: Write a concise description of what you're experiencing.
+      placeholder: Tell us what you see!
+      render: markdown
+  - type: textarea
+    id: expected-behaviour
+    attributes:
+      label: What is you expect to happen?
+      description: Write a concise description of what you expected to happen.
+      placeholder: Tell us what you want!
+      render: markdown
+  - type: textarea
+    attributes:
+      label: What do you do to get this bug?
+      description: Write the steps to reproduce the behavior.
+      placeholder: |
+        1. With this config...
+        2. Run '...'
+        3. See error...
+      render: markdown
