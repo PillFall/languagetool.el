@@ -65,6 +65,17 @@
                                              lang)))
 
 ;;;###autoload
+(defun languagetool-clear-suggestions ()
+  "Clear all the buffer suggestions.
+
+If `languagetool-server-mode' is active, it would rise an error,
+as you are not suppose to call this function."
+  (when languagetool-server-mode
+    (error "Do not use this function in server mode
+If you want to clear the suggestions turn off the server mode)"))
+  (languagetool-core-clear-buffer))
+
+;;;###autoload
 (defun languagetool-check (begin end)
   "Correct the current buffer and highlight errors.
 

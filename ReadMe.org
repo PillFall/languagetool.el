@@ -58,7 +58,7 @@ configuration, enabling all current features, would be:
   :ensure t
   :defer t
   :commands (languagetool-check
-             languagetool-clear
+             languagetool-clear-suggestions
              languagetool-correct-at-point
              languagetool-correct-buffer
              languagetool-set-language
