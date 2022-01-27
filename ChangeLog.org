@@ -10,17 +10,18 @@ Versioning]].
 ** [Unreleased]
 *** Added
 - ~languagetool-set-language~ has its own history and autocompletion.
-- Now bundles a customizable alist which holds all the available languages.
+- Customizable alist with all the available language codes and names.
+- Customizable alist with the issue faces and names.
 - New and better documentation in ReadMe file.
+- ~languagetool-correction-language~ is buffer local and safe variable.
 
 *** Changed
-- ~languagetool-default-language~ is now ~languagetool-correction-language~ and
-  it's buffer local.
+- ~languagetool-default-language~ is now ~languagetool-correction-language~.
 - ~languagetool-language-tool-jar~ is now ~languagetool-console-command~.
+- ~languagetool-language-tool-arguments~ is now ~languagetool-console-arguments~.
 - ~langaugetool-server-language-tool-jar~ is now ~languagetool-server-command~.
-- ~languagetool-language-tool-arguments~ is now ~languagetool-console-command~.
 - ~languagetool-check~ recheck the buffer in LanguageTool Server Mode.
-- ~languagetool-clear-buffer~ is now ~languagetool-clear~.
+- ~languagetool-clear-buffer~ is now ~languagetool-clear-suggestions~.
 
 *** Removed
 - LanguageTool Server Mode only checks when idle after 3 secconds by default.
@@ -31,6 +32,8 @@ Versioning]].
 
 *** Fixed
 - If using LanguageTool classes, fails invoking LanguageTool.
+- Customizable support, now ~customize~ recognize and build correctly the
+  interface for package variables.
 
 ** [0.4.3]
 *** Fixed
