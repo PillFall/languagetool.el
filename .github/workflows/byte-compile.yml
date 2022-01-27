@@ -11,12 +11,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        emacs_version:
+          - 27.1
+          - 27.2
+          - snapshot
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v2
       - name: Install emacs
-        run: sudo apt install emacs
-      - name: Install packages
-        run: |
-          emacs --batch --eval "(progn (require 'package) (add-to-list 'package-archives '(\"melpa\" . \"http://melpa.org/packages/\") t) (package-initialize) (package-refresh-contents) (package-install 'request))"
-      - name: Byte-compile the code
-        run: make
+        uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs_version }}
+      - name: Install required packages and Byte-compile the code
+        run: make ci
+        env:
+          LOAD_PATH: "-f package-initialize -L ."
