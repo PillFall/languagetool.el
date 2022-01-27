@@ -146,7 +146,7 @@ to use in that buffer, setting the variable ~languagetool-correction-language~,
 or call ~languagetool-set-language~.
 
 If you want to know more customization options you can find those at the
-/customize/ interface or expore the docs folder.
+/customize/ interface.
 
 
 
