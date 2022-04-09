@@ -112,7 +112,7 @@ First you must configure Java to accept files in UTF-8, for that purpose, set
 follows:
 
 #+BEGIN_SRC elisp
-(setq languagetool-console-command '("-Dfile.encoding=UTF-8"))
+(setq languagetool-java-arguments '("-Dfile.encoding=UTF-8"))
 #+END_SRC
 
 Then you need to tell the package how do you plan to call LanguageTool.
