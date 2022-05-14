@@ -203,7 +203,7 @@ in the communication to the LanguageTool HTTP API.
 
 After your server is running, you can toggle on the ~languagetool-server-mode~.
 LanguageTool then starts to highlight all its suggestions in the available
-portion of the buffer. You use the same method as in ~[[#console-mode][console]]~ mode to correct
+portion of the buffer. You use the same method as in [[#console-mode][~console~]] mode to correct
 your text.
 
 If you finish, just toggle off the ~languagetool-server-mode~, it will take all
