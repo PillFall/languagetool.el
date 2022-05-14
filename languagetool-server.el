@@ -278,6 +278,17 @@ used in the POST request made to the LanguageTool server."
                                           "motherTongue"
                                           languagetool-mother-tongue)))
 
+    ;; Add LanguageTool Preamium features
+    (when (stringp languagetool-api-key)
+      (setq arguments (json-add-to-object arguments
+                                          "apiKey"
+                                          languagetool-api-key)))
+
+    (when (stringp languagetool-username)
+      (setq arguments (json-add-to-object arguments
+                                          "username"
+                                          languagetool-username)))
+
     ;; Appends the disabled rules
     (let ((rules ""))
       ;; Global disabled rules

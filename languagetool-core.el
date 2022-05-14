@@ -29,6 +29,21 @@
 
 ;; Variable definitions:
 
+(defcustom languagetool-api-key nil
+  "LanguageTool API Key for Premium features."
+  :group 'languagetool
+  :type '(choice
+          (const nil)
+          string))
+
+(defcustom languagetool-username nil
+  "LanguageTool Username for Premium features.
+
+Your username/email as used to log in at languagetool.org."
+  :group 'languagetool
+  :type '(choice
+          (const nil)
+          string))
 
 (defcustom languagetool-correction-language "auto"
   "LanguageTool correction and checking language.
