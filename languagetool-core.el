@@ -141,7 +141,6 @@ Each element is a cons-cell with the form (CODE . NAME)."
           (const nil)
           (repeat string)))
 
-
 (defcustom languagetool-local-disabled-rules nil
   "LanguageTool buffer local disabled rules."
   :group 'languagetool
