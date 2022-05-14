@@ -6,8 +6,11 @@ The format follows [[https://keepachangelog.com/en/1.0.0/][Keep a Changelog]], a
 Versioning]].
 
 
-
 ** [Unreleased]
+
+** [1.1.0]
+*** Added
+- Support for API premium features.
 
 ** [1.0.0]
 *** Added
@@ -39,7 +42,7 @@ Versioning]].
 
 ** [0.4.3]
 *** Fixed
-- Error when putting `~` on LanguageTool jar path. (Fix #7)
+- Error when putting ~~~ on LanguageTool jar path. (Fix #7)
 
 ** [0.4.2]
 *** Fixed
