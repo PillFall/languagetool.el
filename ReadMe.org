@@ -138,6 +138,13 @@ will call LanguageTool from its class, so set ~languagetool-java-arguments~,
       languagetool-server-command "org.languagetool.server.HTTPServer")
 #+END_SRC
 
+If you pay for LanguageTool Premium features, you can add the keys for the LanguageTool api as follows:
+
+#+BEGIN_SRC elisp
+(setq languagetool-api-key "xxxxxxxxxxxx"
+      languagetool-username "johndoe@example.com")
+#+END_SRC
+
 By default, the correction language is ~auto~ and it is buffer local, meaning
 that you could check in different languages different files, if you want to
 change the language, you could use [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Specifying-File-Variables.html][local file variables]] to define the language
@@ -196,7 +203,7 @@ in the communication to the LanguageTool HTTP API.
 
 After your server is running, you can toggle on the ~languagetool-server-mode~.
 LanguageTool then starts to highlight all its suggestions in the available
-portion of the buffer. You use the same method as in [[#console-mode][~console~ mode]] to correct
+portion of the buffer. You use the same method as in ~[[#console-mode][console]]~ mode to correct
 your text.
 
 If you finish, just toggle off the ~languagetool-server-mode~, it will take all
