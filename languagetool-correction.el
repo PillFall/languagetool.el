@@ -99,7 +99,7 @@ on OVERLAY."
    ((char-equal ?\C-s pressed-key)
     (goto-char (overlay-end overlay)))
    ((not (cl-position pressed-key languagetool-correction-keys))
-    (message "Key `%c' cannot be used" pressed-key))
+    (error "Key `%c' cannot be used" pressed-key))
    (t
     (let ((size (length (languagetool-core-get-replacements overlay)))
           (pos (cl-position pressed-key languagetool-correction-keys)))
