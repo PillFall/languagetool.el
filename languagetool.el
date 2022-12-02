@@ -113,16 +113,16 @@ checked."
   (when languagetool-server-mode
     (setq languagetool-server-correction-p t))
   (condition-case err
-      (progn
-        (dolist (ov (reverse (overlays-in (point)
-                                          (point-max))))
-          (when (and (overlay-get ov 'languagetool-message)
-                     (overlay-start ov))
-            (goto-char (overlay-start ov))
-            (when (eql 'quit
-                       (languagetool-correction-at-point))
-              (cl-return 'quit))))
-        (message "End of corrections"))
+      (unless (eql 'quit
+               (dolist (ov (reverse (overlays-in (point)
+                                                 (point-max))))
+                 (when (and (overlay-get ov 'languagetool-message)
+                            (overlay-start ov))
+                   (goto-char (overlay-start ov))
+                   (when (eql 'quit
+                              (languagetool-correction-at-point))
+                     (cl-return 'quit)))))
+        (message "Nothing left to correct"))
     ((quit error)
      (when languagetool-server-mode
        (setq languagetool-server-correction-p nil))
