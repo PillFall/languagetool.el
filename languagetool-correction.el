@@ -80,7 +80,10 @@ Get the information about corrections from OVERLAY."
                       "]: Ignore  "))
     (setq msg (concat msg "["
                       (propertize "C-s" 'face 'font-lock-keyword-face)
-                      "]: Skip\n"))
+                      "]: Skip  "))
+    (setq msg (concat msg "["
+                      (propertize "SPC" 'face 'font-lock-keyword-face)
+                      "]: Quit\n"))
     msg))
 
 (defun languagetool-correction-apply (pressed-key overlay)
@@ -96,7 +99,7 @@ on OVERLAY."
    ((char-equal ?\C-s pressed-key)
     (goto-char (overlay-end overlay)))
    ((not (cl-position pressed-key languagetool-correction-keys))
-    (error "Key `%c' cannot be used" pressed-key))
+    (message "Key `%c' cannot be used" pressed-key))
    (t
     (let ((size (length (languagetool-core-get-replacements overlay)))
           (pos (cl-position pressed-key languagetool-correction-keys)))
@@ -114,7 +117,11 @@ on OVERLAY."
         (message nil)
         (setq pressed-key
               (read-char (languagetool-correction-parse-message ov)))
-        (languagetool-correction-apply pressed-key ov)))))
+        (cond
+         ((char-equal ?\s pressed-key)
+          (return 'quit))
+         (t
+          (languagetool-correction-apply pressed-key ov)))))))
 
 (provide 'languagetool-correction)
 
