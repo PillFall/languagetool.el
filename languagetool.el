@@ -114,8 +114,10 @@ checked."
     (setq languagetool-server-correction-p t))
   (condition-case err
       (unless (eql 'quit
-               (dolist (ov (reverse (overlays-in (point)
-                                                 (point-max))))
+               (dolist (ov (sort (overlays-in (point)
+                                              (point-max))
+                                 (lambda (x y) (< (overlay-start x)
+                                                  (overlay-start y)))))
                  (when (and (overlay-get ov 'languagetool-message)
                             (overlay-start ov))
                    (goto-char (overlay-start ov))
