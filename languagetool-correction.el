@@ -119,7 +119,7 @@ on OVERLAY."
               (read-char (languagetool-correction-parse-message ov)))
         (cond
          ((char-equal ?\s pressed-key)
-          (return 'quit))
+          (cl-return 'quit))
          (t
           (languagetool-correction-apply pressed-key ov)))))))
 
