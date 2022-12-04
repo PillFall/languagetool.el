@@ -112,7 +112,7 @@ checked."
   (interactive)
   (when languagetool-server-mode
     (setq languagetool-server-correction-p t))
-  (condition-case err
+y  (condition-case err
       (unless (eql 'quit
                (dolist (ov (sort (overlays-in (point)
                                               (point-max))
@@ -129,7 +129,9 @@ checked."
      (when languagetool-server-mode
        (setq languagetool-server-correction-p nil))
      (error "%s"
-            (error-message-string err))))
+            (error-message-string err))
+     (--cl-block-nil--)
+     (message ("Quit"))))
   (when languagetool-server-mode
     (setq languagetool-server-correction-p nil)))
 
