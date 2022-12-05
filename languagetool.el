@@ -114,7 +114,7 @@ checked."
     (setq languagetool-server-correction-p t))
   (condition-case err
       (progn
-        (dolist (ov (sort (overlays-in (point)
+        (dolist (ov (sort (overlays-in (point-min)
                                        (point-max))
                           (lambda (x y) (< (overlay-start x)
                                            (overlay-start y)))))
