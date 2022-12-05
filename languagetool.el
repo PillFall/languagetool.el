@@ -112,17 +112,26 @@ checked."
   (interactive)
   (when languagetool-server-mode
     (setq languagetool-server-correction-p t))
-  (condition-case err
-      (save-excursion
-        (dolist (ov (reverse (overlays-in (point-min) (point-max))))
-          (when (and (overlay-get ov 'languagetool-message)
-                     (overlay-start ov))
-            (goto-char (overlay-start ov))
-            (languagetool-correction-at-point))))
+y  (condition-case err
+      (unless (eql 'quit
+               (dolist (ov (sort (overlays-in (point)
+                                              (point-max))
+                                 (lambda (x y) (< (overlay-start x)
+                                                  (overlay-start y)))))
+                 (when (and (overlay-get ov 'languagetool-message)
+                            (overlay-start ov))
+                   (goto-char (overlay-start ov))
+                   (when (eql 'quit
+                              (languagetool-correction-at-point))
+                     (cl-return 'quit)))))
+        (message "Nothing left to correct"))
     ((quit error)
      (when languagetool-server-mode
        (setq languagetool-server-correction-p nil))
-     (error "%s" (error-message-string err))))
+     (error "%s"
+            (error-message-string err))
+     (--cl-block-nil--)
+     (message ("Quit"))))
   (when languagetool-server-mode
     (setq languagetool-server-correction-p nil)))
 
