@@ -1,0 +1,64 @@
+* Contributing
+
+In this guide you will get an overview of the contribution workflow from opening
+an issue, creating a PR, reviewing, and merging the PR.
+
+** Issues
+
+*** Create a new issues
+
+If you spot a problem with the package, [[https://github.com/PillFall/languagetool.el/issues][search if an issue already exists]]. If a
+related issue doesn't exist, you can open a new issue using a relevant [[https://github.com/PillFall/languagetool.el/issues/new/choose][issue
+form]].
+
+*** Solve an issue
+
+Scan through our [[https://github.com/PillFall/languagetool.el/issues][existing issues]] to find one that interests you. You can narrow
+down the search using ~labels~ as filters. See Labels for more information. If
+you find an issue to work on, you are welcome to open a PR with a fix.
+
+
+
+** Pull Request
+
+When you're finished with the changes, create a pull request, also known as a
+PR.
+
+- Brach out from ~develop~, name the branch the way you want, but keep in mind
+  that is better to name the branch after the feature or fix.
+- All PR that doesn't come from-to ~develop~ will be rejected.
+- Don't forget to link PR to issue if you are solving one.
+- Enable the checkbox to allow maintainer edits so the branch can be update for
+  a merge. Once you submit your PR, your code will be reviewed. We may ask
+  questions or request additional information.
+- We may ask for changes to be made before a PR can be merged, either using
+  suggested changes or pull request comments. You can apply suggested changes
+  directly through the UI. You can make any other changes in your fork, then
+  commit them to your branch.
+- As you update your PR and apply changes, mark each conversation as resolved.
+- If you run into any merge issues, checkout this [[https://github.com/skills/resolve-merge-conflicts][git tutorial]] to help you
+  resolve merge conflicts and other issues.
+
+
+** Commit your update
+
+Commit the changes once you are happy with them. Remember to always test:
+
+- [ ] The Emacs Lisp files should follow the [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Tips.html][Emacs Lisp conventions]] and the
+  [[https://github.com/bbatsov/emacs-lisp-style-guide][Emacs Lisp Style Guide]].
+- [ ] Your code byte-compiles cleanly.
+- [ ] Use the last version of ~package-lint~ to check for packaging issues, and
+  address its feedback.
+- [ ] ~M-x checkdoc~ is happy with your docstrings.
+
+
+
+** Your PR is merged!
+
+Congratulations!
+
+Once your PR is merged, your contributions will be publicly visible on the
+package.
+
+Now that you are part of the ~languagetool.el~ developers, see how else you can
+contribute.
