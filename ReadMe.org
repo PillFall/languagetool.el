@@ -197,7 +197,7 @@ to Emacs (If you close Emacs, it's over). This server starts to listen in port
 another value.
 
 If you are going to use a server with another configuration, like servers not
-located in your localhost, you must set ~languagetool-server-host~ and
+located in your localhost, you must set ~languagetool-server-url~ and
 ~languagetool-server-port~ to whatever adjust your needs. These variables play
 in the communication to the LanguageTool HTTP API.
 
