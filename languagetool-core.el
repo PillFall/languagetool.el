@@ -29,6 +29,8 @@
 
 ;; Variable definitions:
 
+(require 'ispell)
+
 (defcustom languagetool-api-key nil
   "LanguageTool API Key for Premium features."
   :group 'languagetool
@@ -224,6 +226,20 @@ A example hint function:
       (setq replace (append replace
                             (list (cdr (assoc 'value (aref replacements index)))))))
     replace))
+
+(defun languagetool-core-correct-p (word)
+  "Check if WORD is assumed correct in the current buffer."
+  (save-excursion
+    (goto-char (point-min))
+    (let ((found nil))
+      (while (and (search-forward ispell-words-keyword nil t)
+                  (not found))
+	(when (re-search-forward (rx
+                                  (zero-or-more space)
+                                  (group (literal word))
+                                  (zero-or-more space)) (line-end-position) t)
+          (setq found t)))
+      found)))
 
 (provide 'languagetool-core)
 

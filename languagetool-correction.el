@@ -29,6 +29,7 @@
 
 (require 'cl-lib)
 (require 'languagetool-core)
+(require 'ispell)
 
 ;; Variable definitions:
 
@@ -92,6 +93,7 @@ on OVERLAY."
    ((char-equal ?\C-i pressed-key)
     (progn
       (goto-char (overlay-end overlay))
+      (ispell-add-per-file-word-list (buffer-substring-no-properties (overlay-end overlay) (overlay-start overlay)))
       (delete-overlay overlay)))
    ((char-equal ?\C-s pressed-key)
     (goto-char (overlay-end overlay)))
@@ -119,3 +121,5 @@ on OVERLAY."
 (provide 'languagetool-correction)
 
 ;;; languagetool-correction.el ends here
+
+; LocalWords:  languagetool

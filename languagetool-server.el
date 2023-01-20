@@ -6,7 +6,7 @@
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
 ;; Version: 1.1.0
-;; Package-Requires: ((emacs "27.0"))
+;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -309,23 +309,25 @@ for suggestions."
   "Highlight LanguageTool Server issues in CHECKING-BUFFER.
 
 STATUS is a plist thrown by Emacs url. Throws an error if the response is null."
-    (when (or (not (symbol-value 'url-http-response-status))
-              (/= (symbol-value 'url-http-response-status) 200))
-      (error "LanguageTool Server closed"))
-    (goto-char (point-max))
-    (backward-sexp)
-    (let ((json-parsed (json-read)))
-      (with-current-buffer checking-buffer
+  (when (/= (symbol-value 'url-http-response-status) 200)
+    (error "LanguageTool Server closed"))
+  (goto-char (point-max))
+  (backward-sexp)
+  (let ((json-parsed (json-read)))
+    (with-current-buffer checking-buffer
+      (save-excursion
         (languagetool-core-clear-buffer)
         (when languagetool-server-mode
           (let ((corrections (cdr (assoc 'matches json-parsed))))
             (dotimes (index (length corrections))
               (let* ((correction (aref corrections index))
                      (offset (cdr (assoc 'offset correction)))
-                     (size (cdr (assoc 'length correction))))
-                (languagetool-issue-create-overlay
-                 (+ (point-min) offset) (+ (point-min) offset size)
-                 correction))))))))
+                     (size (cdr (assoc 'length correction)))
+                     (start (+ (point-min) offset))
+                     (end (+ (point-min) offset size))
+                     (word (buffer-substring-no-properties start end)))
+                (unless (languagetool-core-correct-p word)
+                  (languagetool-issue-create-overlay start end correction))))))))))
 
 (provide 'languagetool-server)
 
