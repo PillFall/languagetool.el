@@ -44,12 +44,12 @@ PR.
 
 Commit the changes once you are happy with them. Remember to always test:
 
-- [ ] The Emacs Lisp files should follow the [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Tips.html][Emacs Lisp conventions]] and the
+- The Emacs Lisp files should follow the [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Tips.html][Emacs Lisp conventions]] and the
   [[https://github.com/bbatsov/emacs-lisp-style-guide][Emacs Lisp Style Guide]].
-- [ ] Your code byte-compiles cleanly.
-- [ ] Use the last version of ~package-lint~ to check for packaging issues, and
+- Your code byte-compiles cleanly.
+- Use the last version of ~package-lint~ to check for packaging issues, and
   address its feedback.
-- [ ] ~M-x checkdoc~ is happy with your docstrings.
+- ~M-x checkdoc~ is happy with your docstrings.
 
 
 

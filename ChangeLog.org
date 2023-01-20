@@ -7,6 +7,8 @@ Versioning]].
 
 
 ** [Unreleased]
+*** Added
+- Support for ~ispell~ ~LocalWords~ ignored words.
 
 ** [1.1.0]
 *** Added
