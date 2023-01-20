@@ -225,18 +225,19 @@ Found no errors.")
   "Highlight issues in the buffer.
 
 BEGIN defines the start of the current region."
-  (let ((corrections (cdr (assoc 'matches languagetool-console-output-parsed)))
-        (correction nil))
+  (let ((corrections (cdr (assoc 'matches languagetool-console-output-parsed))))
     (dotimes (index (length corrections))
-      (setq correction (aref corrections index))
-      (let ((offset (cdr (assoc 'offset correction)))
-            (size (cdr (assoc 'length correction))))
-        (languagetool-issue-create-overlay
-         (+ begin offset) (+ begin offset size)
-         correction))))
-  (setq languagetool-core-hint-timer
-        (run-with-idle-timer languagetool-hint-idle-delay t
-                             languagetool-hint-function)))
+      (let* ((correction (aref corrections index))
+             (offset (cdr (assoc 'offset correction)))
+             (size (cdr (assoc 'length correction)))
+             (start (+ begin offset))
+             (end (+ begin offset size))
+             (word (buffer-substring-no-properties start end)))
+        (unless (languagetool-core-correct-p word)
+          (languagetool-issue-create-overlay start end correction))))
+    (setq languagetool-core-hint-timer
+          (run-with-idle-timer languagetool-hint-idle-delay t
+                               languagetool-hint-function))))
 
 (provide 'languagetool-console)
 
