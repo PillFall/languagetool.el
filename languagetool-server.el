@@ -6,7 +6,7 @@
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
 ;; Version: 1.1.0
-;; Package-Requires: ((emacs "27.0") (request "0.3.2"))
+;; Package-Requires: ((emacs "27.0"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -29,8 +29,7 @@
 ;;; Code:
 
 (require 'json)
-(require 'cl-lib)
-(require 'request)
+(require 'url)
 (require 'languagetool-java)
 (require 'languagetool-core)
 (require 'languagetool-issue)
@@ -38,7 +37,7 @@
 ;; Group definition:
 
 (defgroup languagetool-server nil
-  "Real time LanguageTool Server"
+  "Real time LanguageTool Server."
   :tag "Server"
   :prefix "languagetool-server-"
   :group 'languagetool)
@@ -74,10 +73,10 @@ More info at http://wiki.languagetool.org/command-line-options."
   :group 'languagetool-server
   :type 'integer)
 
-(defcustom languagetool-server-max-tries 20
-  "LanguageTool Server max number of tries before disconnect from server."
+(defcustom languagetool-server-max-timeout 5.0
+  "LanguageTool Server maximum number of seconds to wait before giving up."
   :group 'languagetool-server
-  :type 'integer)
+  :type 'number)
 
 (defcustom languagetool-server-check-delay 3.0
   "LanguageTool Server delay time before checking again for issues."
@@ -235,81 +234,60 @@ It's not recommended to run this function more than once."
   (interactive)
   (delete-process languagetool-server-process))
 
-(defun languagetool-server-check-for-communication (&optional try)
+(defun languagetool-server-check-for-communication ()
   "Check if the LanguageTool Server is able to handle requests.
 
-Optional parameter TRY is the try number before Emacs show an error."
-  (unless try (setq try 1))
-  (when (>= try languagetool-server-max-tries)
-    (languagetool-server-mode -1)
-    (error "LanguageTool Server cannot communicate with server"))
+This methods will only check if the server is up for the number
+of seconds specified in `languagetool-server-max-timeout'."
   (unless languagetool-server-open-communication-p
-    (request
-      (format "%s:%d/v2/languages" languagetool-server-url languagetool-server-port)
-      :type "GET"
-      :parser 'json-read
-      :success (cl-function
-                (lambda (&key _response &allow-other-keys)
-                  (message "LanguageTool Server communication is up...")
-                  (setq languagetool-server-open-communication-p t)
-                  (languagetool-server-check)))
-      :error (cl-function
-              (lambda (&key _error-thrown &allow-other-keys)
-                (when (or
-                       languagetool-server-mode
-                       (not languagetool-server-open-communication-p))
-                  (languagetool-server-check-for-communication (+ try 1))))))))
+    (condition-case nil
+        (let ((url-request-method "GET"))
+          (with-current-buffer (url-retrieve-synchronously
+                                (url-encode-url (format "%s:%d/v2/languages" languagetool-server-url languagetool-server-port))
+                                nil
+                                nil
+                                languagetool-server-max-timeout)
+            (when (/= (symbol-value 'url-http-response-status) 200)
+              (error "Not successful response"))
+            (setq languagetool-server-open-communication-p t)
+            (message "LanguageTool Server communication is up...")
+            (languagetool-server-check)))
+      (error
+       (languagetool-server-mode -1)
+       (error "LanguageTool Server cannot communicate with server")))))
 
 (defun languagetool-server-parse-request ()
   "Return a json-like object with LanguageTool Server request arguments parsed.
 
 Return the arguments as an assoc list of string which will be
 used in the POST request made to the LanguageTool server."
-  (let ((arguments (json-new-object)))
+  (let ((arguments ()))
 
     ;; Appends the correction language information
-    (setq arguments (json-add-to-object arguments
-                                        "language"
-                                        languagetool-correction-language))
+    (push (list "language" languagetool-correction-language) arguments)
 
     ;; Appends the mother tongue information
     (when (stringp languagetool-mother-tongue)
-      (setq arguments (json-add-to-object arguments
-                                          "motherTongue"
-                                          languagetool-mother-tongue)))
+      (push (list "motherTongue" languagetool-mother-tongue) arguments))
 
     ;; Add LanguageTool Preamium features
     (when (stringp languagetool-api-key)
-      (setq arguments (json-add-to-object arguments
-                                          "apiKey"
-                                          languagetool-api-key)))
+      (push (list "apiKey" languagetool-api-key) arguments))
 
     (when (stringp languagetool-username)
-      (setq arguments (json-add-to-object arguments
-                                          "username"
-                                          languagetool-username)))
+      (push (list "username" languagetool-username) arguments))
 
     ;; Appends the disabled rules
-    (let ((rules ""))
+    (let ((rules))
       ;; Global disabled rules
-      (dolist (rule languagetool-disabled-rules)
-        (if (string= rules "")
-            (setq rules (concat rules rule))
-          (setq rules (concat rules "," rule))))
-      ;; Local disabled rules
-      (dolist (rule languagetool-local-disabled-rules)
-        (if (string= rules "")
-            (setq rules (concat rules rule))
-          (setq rules (concat rules "," rule))))
+      (setq rules (string-join (append languagetool-disabled-rules languagetool-local-disabled-rules) ","))
+
       (unless (string= rules "")
-        (setq arguments (json-add-to-object arguments "disabledRules" rules))))
+        (push (list "disabledRules" rules) arguments)))
 
     ;; Add the buffer contents
-    (setq arguments (json-add-to-object arguments
-                                        "text"
-                                        (buffer-substring-no-properties
-                                         (point-min)
-                                         (point-max))))
+    (push (list "text" (buffer-substring-no-properties (point-min) (point-max))) arguments)
+
     arguments))
 
 (defun languagetool-server-check ()
@@ -319,38 +297,35 @@ This function checks for the actual showed region of the buffer
 for suggestions."
   (when (and languagetool-server-mode
              (not languagetool-server-correction-p))
-    (request
-      (format "%s:%d/v2/check" languagetool-server-url languagetool-server-port)
-      :type "POST"
-      :data (languagetool-server-parse-request)
-      :parser 'json-read
-      :success (cl-function
-                (lambda (&key response &allow-other-keys)
-                  (languagetool-server-highlight-matches
-                   (request-response-data response))))
-      :error (cl-function
-              (lambda (&key error-thrown &allow-other-keys)
-                (languagetool-server-mode -1)
-                (error
-                 "[Fatal Error] LanguageTool closed and got error: %S"
-                 error-thrown))))))
+    (let ((url-request-method "POST")
+          (url-request-data (url-build-query-string (languagetool-server-parse-request))))
+      (url-retrieve
+       (url-encode-url (format "%s:%d/v2/check" languagetool-server-url languagetool-server-port))
+       #'languagetool-server-highlight-matches
+       (list (current-buffer))
+       t))))
 
-(defun languagetool-server-highlight-matches (json-parsed)
-  "Highlight LanguageTool Server issues in the buffer.
+(defun languagetool-server-highlight-matches (_status checking-buffer)
+  "Highlight LanguageTool Server issues in CHECKING-BUFFER.
 
-JSON-PARSED is a json object with the suggestions thrown by the
-LanguageTool Server."
-  (languagetool-core-clear-buffer)
-  (when languagetool-server-mode
-    (let ((corrections (cdr (assoc 'matches json-parsed)))
-          (correction nil))
-      (dotimes (index (length corrections))
-        (setq correction (aref corrections index))
-        (let ((offset (cdr (assoc 'offset correction)))
-              (size (cdr (assoc 'length correction))))
-          (languagetool-issue-create-overlay
-           (+ (point-min) offset) (+ (point-min) offset size)
-           correction))))))
+STATUS is a plist thrown by Emacs url. Throws an error if the response is null."
+    (when (or (not (symbol-value 'url-http-response-status))
+              (/= (symbol-value 'url-http-response-status) 200))
+      (error "LanguageTool Server closed"))
+    (goto-char (point-max))
+    (backward-sexp)
+    (let ((json-parsed (json-read)))
+      (with-current-buffer checking-buffer
+        (languagetool-core-clear-buffer)
+        (when languagetool-server-mode
+          (let ((corrections (cdr (assoc 'matches json-parsed))))
+            (dotimes (index (length corrections))
+              (let* ((correction (aref corrections index))
+                     (offset (cdr (assoc 'offset correction)))
+                     (size (cdr (assoc 'length correction))))
+                (languagetool-issue-create-overlay
+                 (+ (point-min) offset) (+ (point-min) offset size)
+                 correction))))))))
 
 (provide 'languagetool-server)
 
