@@ -10,6 +10,9 @@ Versioning]].
 *** Added
 - Support for ~ispell~ ~LocalWords~ ignored words.
 
+*** Removed
+- Package ~request 0.3.*~ dependency.
+
 ** [1.1.0]
 *** Added
 - Support for API premium features.
