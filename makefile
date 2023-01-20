@@ -7,7 +7,7 @@ EMACSBIN ?= emacs
 BATCH = $(EMACSBIN) -Q --batch $(LOAD_PATH)
 
 PKG = languagetool
-RQD_PKG  = request
+RQD_PKG  =
 
 all: lisp
 
@@ -49,18 +49,6 @@ clean:
 
 ## CI integration ####################################################
 
-ci: require lisp
+ci: lisp
 
 require: $(RQD_PKG)
-
-request:
-	@printf "Installing $@\n"
-	@$(BATCH) \
-	--eval "(progn \
-	(require 'package) \
-	(add-to-list \
-        'package-archives \
-        '(\"melpa\" . \"http://melpa.org/packages/\") t) \
-    (package-initialize) \
-	(package-refresh-contents) \
-	(package-install 'request))"
