@@ -81,7 +81,10 @@ Get the information about corrections from OVERLAY."
                       "]: Ignore  "))
     (setq msg (concat msg "["
                       (propertize "C-s" 'face 'font-lock-keyword-face)
-                      "]: Skip\n"))
+                      "]: Skip  "))
+    (setq msg (concat msg "["
+                      (propertize "SPC" 'face 'font-lock-keyword-face)
+                      "]: Quit\n"))
     msg))
 
 (defun languagetool-correction-apply (pressed-key overlay)
@@ -116,7 +119,11 @@ on OVERLAY."
         (message nil)
         (setq pressed-key
               (read-char (languagetool-correction-parse-message ov)))
-        (languagetool-correction-apply pressed-key ov)))))
+        (cond
+         ((char-equal ?\s pressed-key)
+          (signal 'quit nil))
+         (t
+          (languagetool-correction-apply pressed-key ov)))))))
 
 (provide 'languagetool-correction)
 
