@@ -311,6 +311,7 @@ for suggestions."
 STATUS is a plist thrown by Emacs url. Throws an error if the response is null."
   (when (/= (symbol-value 'url-http-response-status) 200)
     (error "LanguageTool Server closed"))
+  (set-buffer-multibyte t)
   (goto-char (point-max))
   (backward-sexp)
   (let ((json-parsed (json-read)))
