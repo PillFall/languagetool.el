@@ -6,7 +6,7 @@
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
 ;; Version: 1.2.0
-;; Package-Requires: ((emacs "27.0"))
+;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@
 ;; Group definition:
 
 (defgroup languagetool-issue nil
-  "LanguageTool faces for marking issues"
+  "LanguageTool faces for marking issues."
   :tag "Issue Faces"
   :prefix "languagetool-issue-"
   :group 'languagetool)
@@ -92,7 +92,7 @@ Each element is a cons cell with the form (ISSUE_TYPE . FACE_NAME)."
 
 (defun languagetool-issue-get-face (issue-type)
   "Return the face for ISSUE-TYPE."
-  (or (cdr (assoc issue-type languagetool-issue-face-alist))
+  (or (alist-get issue-type languagetool-issue-face-alist)
       'languagetool-issue-default))
 
 (defun languagetool-issue-create-overlay (begin end correction)
@@ -102,11 +102,11 @@ Create an overlay for correction in the region delimited by BEGIN
 and END, parsing CORRECTION as overlay properties."
   (save-excursion
     (let* ((ov (make-overlay begin end))
-           (short-message (cdr (assoc 'shortMessage correction)))
-           (message (cdr (assoc 'message correction)))
-           (replacements (cdr (assoc 'replacements correction)))
-           (rule (cdr (assoc 'rule correction)))
-           (issue-type (cdr (assoc 'issueType rule))))
+           (short-message (alist-get 'shortMessage correction))
+           (message (alist-get 'message correction))
+           (replacements (alist-get 'replacements correction))
+           (rule (alist-get 'rule correction))
+           (issue-type (alist-get 'issueType rule)))
       (when (string= short-message "")
         (setq short-message message))
       (overlay-put ov 'languagetool-short-message short-message)

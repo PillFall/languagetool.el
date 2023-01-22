@@ -143,7 +143,7 @@ Don't use this function, use `languagetool-server-mode' instead."
 
 
 (defun languagetool-server-class-p ()
-  "Return nil if `languagetool-server-command' is not a Java class."
+  "Return non-nil if `languagetool-server-command' is a Java class."
   (let ((regex (rx
                 line-start
                 (zero-or-more
@@ -159,7 +159,7 @@ Don't use this function, use `languagetool-server-mode' instead."
     (string-match-p regex languagetool-server-command)))
 
 (defun languagetool-server-command-exists-p ()
-  "Return t is `languagetool-console-command' can be used or exists.
+  "Return non-nil is `languagetool-console-command' can be used or exists.
 
 Also sets `languagetool-console-command' to a full path if needed
 for this package to work."
@@ -210,23 +210,21 @@ It's not recommended to run this function more than once."
   (unless (listp languagetool-server-arguments)
     (error "LanguageTool Server Arguments must be a list of strings"))
 
-  (let ((arguments nil))
+  (let (arguments)
 
     ;; Appends the LanguageTool Server Command
     (unless (languagetool-server-class-p)
-      (setq arguments (append arguments (list "-cp"))))
-    (setq arguments (append arguments (list languagetool-server-command)))
+      (push "-cp" arguments))
+    (push languagetool-server-command arguments)
     (unless (languagetool-server-class-p)
-      (setq arguments (append arguments (list "org.languagetool.server.HTTPServer"))))
+      (push "org.languagetool.server.HTTPServer" arguments))
 
-    (setq arguments (append arguments languagetool-server-arguments))
+    (push languagetool-server-arguments arguments)
 
     ;; Appends the port information
-    (setq arguments (append arguments
-                            (list "--port"
-                                  (format "%d" languagetool-server-port))))
+    (push (list "--port" (format "%d" languagetool-server-port)) arguments)
 
-    arguments))
+    (flatten-tree (reverse arguments))))
 
 ;;;###autoload
 (defun languagetool-server-stop ()
@@ -257,11 +255,11 @@ of seconds specified in `languagetool-server-max-timeout'."
        (error "LanguageTool Server cannot communicate with server")))))
 
 (defun languagetool-server-parse-request ()
-  "Return a json-like object with LanguageTool Server request arguments parsed.
+  "Return a assoc-list with LanguageTool Server request arguments parsed.
 
 Return the arguments as an assoc list of string which will be
 used in the POST request made to the LanguageTool server."
-  (let ((arguments ()))
+  (let (arguments)
 
     ;; Appends the correction language information
     (push (list "language" languagetool-correction-language) arguments)
@@ -281,14 +279,11 @@ used in the POST request made to the LanguageTool server."
     (let ((rules))
       ;; Global disabled rules
       (setq rules (string-join (append languagetool-disabled-rules languagetool-local-disabled-rules) ","))
-
       (unless (string= rules "")
         (push (list "disabledRules" rules) arguments)))
 
     ;; Add the buffer contents
-    (push (list "text" (buffer-substring-no-properties (point-min) (point-max))) arguments)
-
-    arguments))
+    (push (list "text" (buffer-substring-no-properties (point-min) (point-max))) arguments)))
 
 (defun languagetool-server-check ()
   "Show LanguageTool Server suggestions in the buffer.
@@ -300,7 +295,7 @@ for suggestions."
     (let ((url-request-method "POST")
           (url-request-data (url-build-query-string (languagetool-server-parse-request))))
       (url-retrieve
-       (url-encode-url (format "%s:%d/v2/check" languagetool-server-url languagetool-server-port))
+       (url-encode-url(format "%s:%d/v2/check" languagetool-server-url languagetool-server-port))
        #'languagetool-server-highlight-matches
        (list (current-buffer))
        t))))
@@ -319,11 +314,11 @@ STATUS is a plist thrown by Emacs url. Throws an error if the response is null."
       (save-excursion
         (languagetool-core-clear-buffer)
         (when languagetool-server-mode
-          (let ((corrections (cdr (assoc 'matches json-parsed))))
+          (let ((corrections (alist-get 'matches json-parsed)))
             (dotimes (index (length corrections))
               (let* ((correction (aref corrections index))
-                     (offset (cdr (assoc 'offset correction)))
-                     (size (cdr (assoc 'length correction)))
+                     (offset (alist-get 'offset correction))
+                     (size (alist-get 'length correction))
                      (start (+ (point-min) offset))
                      (end (+ (point-min) offset size))
                      (word (buffer-substring-no-properties start end)))

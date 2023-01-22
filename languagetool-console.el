@@ -6,7 +6,7 @@
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
 ;; Version: 1.2.0
-;; Package-Requires: ((emacs "27.0"))
+;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -32,11 +32,13 @@
 (require 'languagetool-core)
 (require 'languagetool-issue)
 (require 'languagetool-java)
+(eval-when-compile
+  (require 'subr-x))
 
 ;; Group definition:
 
 (defgroup languagetool-console nil
-  "LanguageTool command line parser and checking"
+  "LanguageTool command line parser and checking."
   :tag "Console"
   :prefix "languagetool-console-"
   :group 'languagetool)
@@ -74,7 +76,7 @@ Command Line.")
 ;;; Function definitions:
 
 (defun languagetool-console-class-p ()
-  "Return nil if `languagetool-console-command' is not a Java class."
+  "Return non-nil if `languagetool-console-command' is a Java class."
   (let ((regex (rx
                 line-start
                 (zero-or-more
@@ -90,7 +92,7 @@ Command Line.")
     (string-match-p regex languagetool-console-command)))
 
 (defun languagetool-console-command-exists-p ()
-  "Return t is `languagetool-console-command' can be used or exists.
+  "Return non-nil if `languagetool-console-command' can be used or exists.
 
 Also sets `languagetool-console-command' to a full path if needed
 for this package to work."
@@ -104,63 +106,55 @@ for this package to work."
   (unless (listp languagetool-console-arguments)
     (error "LanguageTool Console Arguments must be a list of strings"))
 
-  (let ((arguments nil))
+  (let (arguments)
 
     ;; Appends LanguageTool Console Command
     (unless (languagetool-console-class-p)
-      (setq arguments (append arguments (list "-jar"))))
-    (setq arguments (append arguments (list languagetool-console-command)))
+      (push "-jar" arguments))
+    (push languagetool-console-command arguments)
 
     ;; Appends the LanguageTool arguments
-    (setq arguments (append arguments languagetool-console-arguments))
+    (push languagetool-console-arguments arguments)
 
     ;; Appends the common arguments
-    (setq arguments (append arguments
-                            (list "--encoding" "utf8")
-                            (list "--json")))
+    (push (list "--encoding" "utf8" "--json") arguments)
 
     ;; Appends the correction language information
     (if (string= languagetool-correction-language "auto")
-        (setq arguments (append arguments (list "--autoDetect")))
-      (setq arguments (append arguments (list "--language" languagetool-correction-language))))
+        (push "--autoDetect" arguments)
+      (push (list "--language" languagetool-correction-language) arguments))
 
     ;; Appends the mother tongue information
     (when (stringp languagetool-mother-tongue)
-      (setq arguments (append arguments (list "--mothertongue" languagetool-mother-tongue))))
+      (push (list "--mothertongue" languagetool-mother-tongue) arguments))
 
     ;; Appends the disabled rules
-    (let ((rules ""))
-      ;; Global disabled rules
-      (dolist (rule languagetool-disabled-rules)
-        (if (string= rules "")
-            (setq rules (concat rules rule))
-          (setq rules (concat rules "," rule))))
-      ;; Local disabled rules
-      (dolist (rule languagetool-local-disabled-rules)
-        (if (string= rules "")
-            (setq rules (concat rules rule))
-          (setq rules (concat rules "," rule))))
+    (let ((rules (string-join (append languagetool-disabled-rules languagetool-local-disabled-rules) ",")))
       (unless (string= rules "")
-        (setq arguments (append arguments (list "--disable" rules)))))
-    arguments))
+        (push (list "--disable" rules) arguments )))
+    (flatten-tree (reverse arguments))))
 
 (defun languagetool-console-write-debug-info (text)
   "Write debug info in `languagetool-console-output-buffer-name'.
 
 The argument TEXT is the region passed to LanguageTool for
 checking."
-  (insert (propertize " ----- LanguageTool Command:" 'face 'font-lock-warning-face)
-          "\n\n")
-  (insert languagetool-java-bin " "
-          (mapconcat (lambda (x) (format "%s" x)) (append
-                                              (languagetool-console-parse-arguments)
-                                              (languagetool-java-parse-arguments)) " ")
-          "\n\n\n\n")
-  (insert (propertize " ----- LanguageTool Text:" 'face 'font-lock-warning-face)
-          "\n\n")
-  (insert text "\n\n\n\n")
-  (insert (propertize " ----- LanguageTool Output:" 'face 'font-lock-warning-face)
-          "\n\n"))
+  (insert
+   (propertize " ----- LanguageTool Command:" 'face 'font-lock-warning-face)
+   "\n\n"
+   (string-join
+    (append
+     (list languagetool-java-bin)
+     (languagetool-java-parse-arguments)
+     (languagetool-console-parse-arguments))
+    " ")
+   "\n\n\n\n"
+   (propertize " ----- LanguageTool Text:" 'face 'font-lock-warning-face)
+   "\n\n"
+   text
+   "\n\n\n\n"
+   (propertize " ----- LanguageTool Output:" 'face 'font-lock-warning-face)
+   "\n\n"))
 
 (defun languagetool-console-invoke-command-region (begin end)
   "Invoke LanguageTool passing the current region to STDIN.
@@ -219,17 +213,17 @@ Found no errors.")
 
 (defun languagetool-console-matches-exists-p ()
   "Return t if issues where found by LanguageTool or nil otherwise."
-  (/= 0 (length (cdr (assoc 'matches languagetool-console-output-parsed)))))
+  (/= 0 (length (alist-get 'matches languagetool-console-output-parsed))))
 
 (defun languagetool-console-highlight-matches (begin)
   "Highlight issues in the buffer.
 
 BEGIN defines the start of the current region."
-  (let ((corrections (cdr (assoc 'matches languagetool-console-output-parsed))))
+  (let ((corrections (alist-get 'matches languagetool-console-output-parsed)))
     (dotimes (index (length corrections))
       (let* ((correction (aref corrections index))
-             (offset (cdr (assoc 'offset correction)))
-             (size (cdr (assoc 'length correction)))
+             (offset (alist-get 'offset correction))
+             (size (alist-get 'length correction))
              (start (+ begin offset))
              (end (+ begin offset size))
              (word (buffer-substring-no-properties start end)))
