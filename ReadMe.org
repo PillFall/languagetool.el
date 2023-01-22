@@ -138,7 +138,8 @@ will call LanguageTool from its class, so set ~languagetool-java-arguments~,
       languagetool-server-command "org.languagetool.server.HTTPServer")
 #+END_SRC
 
-If you pay for LanguageTool Premium features, you can add the keys for the LanguageTool api as follows:
+If you pay for [[https://languagetool.org/proofreading-api][LanguageTool Proofreading API]] features, you can add the keys for
+the LanguageTool API as follows:
 
 #+BEGIN_SRC elisp
 (setq languagetool-api-key "xxxxxxxxxxxx"
@@ -153,6 +154,14 @@ or call ~languagetool-set-language~.
 
 If you want to know more customization options you can find those at the
 /customize/ interface.
+
+When you decide to ignore a word, this package will add a /comment like/
+following ~ispell~ conventions. So, after the ignore you'll get a comment like
+this at the end of your file.
+
+#+BEGIN_SRC org
+# LocalWords: seplling
+#+END_SRC
 
 
 
@@ -197,7 +206,7 @@ to Emacs (If you close Emacs, it's over). This server starts to listen in port
 another value.
 
 If you are going to use a server with another configuration, like servers not
-located in your localhost, you must set ~languagetool-server-host~ and
+located in your localhost, you must set ~languagetool-server-url~ and
 ~languagetool-server-port~ to whatever adjust your needs. These variables play
 in the communication to the LanguageTool HTTP API.
 

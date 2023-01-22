@@ -5,8 +5,8 @@
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 1.1.0
-;; Package-Requires: ((emacs "27.0") (request "0.3.2"))
+;; Version: 1.2.0
+;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 ;; Group definition:
 
 (defgroup languagetool-java nil
-  "LanguageTool Java related configuration"
+  "LanguageTool Java related configuration."
   :tag "Java"
   :prefix "languagetool-java-"
   :group 'languagetool)
@@ -76,11 +76,11 @@ For example to use in Arch Linux (with pacman dependency):
   (unless (listp languagetool-java-arguments)
     (error "LanguageTool Java Arguments must be a list of strings"))
 
-  (let ((arguments nil))
+  (let (arguments)
 
-    (setq arguments (append arguments languagetool-java-arguments))
+    (push languagetool-java-arguments arguments)
 
-    arguments))
+    (flatten-tree (reverse arguments))))
 
 (provide 'languagetool-java)
 

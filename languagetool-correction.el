@@ -5,8 +5,8 @@
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 1.1.0
-;; Package-Requires: ((emacs "27.0") (request "0.3.2"))
+;; Version: 1.2.0
+;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 
 (require 'cl-lib)
 (require 'languagetool-core)
+(require 'ispell)
 
 ;; Variable definitions:
 
@@ -47,9 +48,11 @@
   "Parse and style minibuffer correction.
 
 Get the information about corrections from OVERLAY."
-  (let ((msg nil)
-        (rule (cdr (assoc 'id (overlay-get overlay 'languagetool-rule))))
-        (message (overlay-get overlay 'languagetool-message)))
+  (let* ((msg nil)
+        (rule (alist-get 'id (overlay-get overlay 'languagetool-rule)))
+        (message (overlay-get overlay 'languagetool-message))
+        (replacements (languagetool-core-get-replacements overlay))
+        (num-choices (length replacements)))
     ;; Add LanguageTool rule to the message
     (setq msg (concat msg "[" rule "] "))
 
@@ -57,34 +60,34 @@ Get the information about corrections from OVERLAY."
     (setq msg (concat msg (propertize (format "%s" message) 'face 'font-lock-warning-face) "\n"))
 
     ;; Format all the possible replacements for the correction suggestion
-    (let ((replacements (languagetool-core-get-replacements overlay)))
-      (when (< 0 (length replacements))
-        (let ((num-choices (length replacements)))
-          ;; If can't assoc each replacement with each hotkey
-          (when (> (length replacements) (length languagetool-correction-keys))
-            (setq num-choices (length languagetool-correction-keys))
-            (setq msg (concat msg "Not all choices shown.\n")))
-          (setq msg (concat msg "\n"))
-          ;; Format all choices
-          (dotimes (index num-choices)
-            (setq msg (concat msg
-                              "["
-                              (propertize
-                               (format "%c" (aref languagetool-correction-keys index))
-                               'face 'font-lock-keyword-face)
-                              "]: "))
-            (setq msg (concat msg (nth index replacements) "  "))))))
+    ;; If can't assoc each replacement with each hotkey truncate the replacements
+    (when (> (length replacements) (length languagetool-correction-keys))
+      (setq num-choices (length languagetool-correction-keys))
+      (setq msg (concat msg "Not all choices shown.\n")))
+    (setq msg (concat msg "\n"))
+    ;; Format all choices
+    (dotimes (index num-choices)
+      (setq msg (concat msg
+                        "["
+                        (propertize
+                         (format "%c" (aref languagetool-correction-keys index))
+                         'face 'font-lock-keyword-face)
+                        "]: "))
+      (setq msg (concat msg (nth index replacements) "  ")))
     ;; Add default Ignore and Skip options
     (setq msg (concat msg "\n["
                       (propertize "C-i" 'face 'font-lock-keyword-face)
                       "]: Ignore  "))
     (setq msg (concat msg "["
                       (propertize "C-s" 'face 'font-lock-keyword-face)
-                      "]: Skip\n"))
-    msg))
+                      "]: Skip  "))
+    ;; Some people do not know C-g is the global exit key
+    (setq msg (concat msg "["
+                      (propertize "C-g" 'face 'font-lock-keyword-face)
+                      "]: Quit\n"))))
 
 (defun languagetool-correction-apply (pressed-key overlay)
-  "Correct text marked by LanguageTool with user choice.
+  "Apply LanguageTool replacement suggestion in OVERLAY.
 
 PRESSED-KEY is the index of the suggestion in the array contained
 on OVERLAY."
@@ -92,6 +95,7 @@ on OVERLAY."
    ((char-equal ?\C-i pressed-key)
     (progn
       (goto-char (overlay-end overlay))
+      (ispell-add-per-file-word-list (buffer-substring-no-properties (overlay-start overlay) (overlay-end overlay)))
       (delete-overlay overlay)))
    ((char-equal ?\C-s pressed-key)
     (goto-char (overlay-end overlay)))
@@ -108,14 +112,16 @@ on OVERLAY."
 
 (defun languagetool-correction-at-point ()
   "Show issue at point and try to apply suggestion."
-  (let (pressed-key)
-    (dolist (ov (overlays-at (point)))
-      (when (overlay-get ov 'languagetool-message)
-        (message nil)
-        (setq pressed-key
-              (read-char (languagetool-correction-parse-message ov)))
-        (languagetool-correction-apply pressed-key ov)))))
+  (dolist (ov (overlays-at (point)))
+    (when (overlay-get ov 'languagetool-message)
+      ;; Cancel any previous message
+      (message nil)
+      (languagetool-correction-apply
+       (read-char (languagetool-correction-parse-message ov))
+       ov))))
 
 (provide 'languagetool-correction)
 
 ;;; languagetool-correction.el ends here
+
+; LocalWords:  languagetool
