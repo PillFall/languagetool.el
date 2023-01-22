@@ -5,8 +5,8 @@
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 1.1.0
-;; Package-Requires: ((emacs "27.0"))
+;; Version: 1.2.0
+;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -30,6 +30,8 @@
 ;; Variable definitions:
 
 (require 'ispell)
+(eval-when-compile
+  (require 'subr-x))
 
 (defcustom languagetool-api-key nil
   "LanguageTool API Key for Premium features."
@@ -165,13 +167,12 @@ A example hint function:
     (when (overlay-get ov 'languagetool-message)
       (unless (current-message)
         (message
-         \"%s%s\" (overlay-get ov 'languagetool-short-message)
-         (if (/= 0
-                 (length (overlay-get ov 'languagetool-replacements)))
+         \"%s%s\"
+         (overlay-get ov 'languagetool-short-message)
+         (if (/= 0 (length (overlay-get ov 'languagetool-replacements)))
              (concat
               \" -> (\"
-              (mapconcat
-               #'identity (languagetool-core-get-replacements ov) \", \")
+              (string-join (languagetool-core-get-replacements ov) \", \")
               \")\")
            \"\"))))))"
   :group 'languagetool
@@ -208,30 +209,28 @@ A example hint function:
     (when (overlay-get ov 'languagetool-message)
       (unless (current-message)
         (message
-         "%s%s" (overlay-get ov 'languagetool-short-message)
-         (if (/= 0
-                 (length (overlay-get ov 'languagetool-replacements)))
+         "%s%s"
+         (overlay-get ov 'languagetool-short-message)
+         (if (/= 0 (length (overlay-get ov 'languagetool-replacements)))
              (concat
               " -> ("
-              (mapconcat
-               #'identity (languagetool-core-get-replacements ov) ", ")
+              (string-join (languagetool-core-get-replacements ov) ", ")
               ")")
            ""))))))
 
 (defun languagetool-core-get-replacements (overlay)
   "Return the replacements of OVERLAY in a list."
   (let ((replacements (overlay-get overlay 'languagetool-replacements))
-        (replace nil))
+        replace)
     (dotimes (index (length replacements))
-      (setq replace (append replace
-                            (list (cdr (assoc 'value (aref replacements index)))))))
-    replace))
+      (push (alist-get 'value (aref replacements index)) replace))
+    (reverse replace)))
 
 (defun languagetool-core-correct-p (word)
-  "Check if WORD is assumed correct in the current buffer."
+  "Return non-nil if WORD is on the LocalWords comment in the current buffer."
   (save-excursion
     (goto-char (point-min))
-    (let ((found nil))
+    (let (found)
       (while (and (search-forward ispell-words-keyword nil t)
                   (not found))
 	(when (re-search-forward (rx
