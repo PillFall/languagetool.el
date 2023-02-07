@@ -7,6 +7,9 @@ Versioning]].
 
 
 ** [Unreleased]
+*** Fixed
+- Face choosing algorithm.
+- Error when checking the matches between server requests. (Fix #14)
 
 ** [1.2.0]
 *** Added
