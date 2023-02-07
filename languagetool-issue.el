@@ -92,7 +92,7 @@ Each element is a cons cell with the form (ISSUE_TYPE . FACE_NAME)."
 
 (defun languagetool-issue-get-face (issue-type)
   "Return the face for ISSUE-TYPE."
-  (or (alist-get issue-type languagetool-issue-face-alist)
+  (or (cdr (assoc issue-type languagetool-issue-face-alist))
       'languagetool-issue-default))
 
 (defun languagetool-issue-create-overlay (begin end correction)
