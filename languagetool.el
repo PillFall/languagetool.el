@@ -6,7 +6,7 @@
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
 ;; Version: 1.2.0
-;; Package-Requires: ((emacs "27.0"))
+;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@
   "Set LanguageTool correction language to LANG."
   (interactive
    (list (read-string "LanguageTool new language: "
-                      (alist-get languagetool-correction-language languagetool-core-languages)
+                      (cdr (assoc languagetool-correction-language languagetool-core-languages))
                       languagetool-correction-language-history
                       (let (languages-choices)
                         (dolist (language
@@ -73,7 +73,7 @@ as you are not suppose to call this function."
   (interactive)
   (when languagetool-server-mode
     (error "Do not use this function in server mode
-If you want to clear the suggestions turn off the server mode)"))
+If you want to clear the suggestions turn off the server mode"))
   (languagetool-core-clear-buffer))
 
 ;;;###autoload
