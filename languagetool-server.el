@@ -286,7 +286,7 @@ used in the POST request made to the LanguageTool server."
     ;; Add the buffer contents
     (push (list "text" (buffer-substring-no-properties (point-min) (point-max))) arguments)))
 
-(defun languagetool-server-should-check (&rest args)
+(defun languagetool-server-should-check (&rest _args)
   "Tell the package to send a request if there are no more edit commands in a time.
 
 When attached to `after-change-functions', Emacs sends the begin,
