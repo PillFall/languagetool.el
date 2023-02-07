@@ -74,13 +74,16 @@ Get the information about corrections from OVERLAY."
                          'face 'font-lock-keyword-face)
                         "]: "))
       (setq msg (concat msg (nth index replacements) "  ")))
-    ;; Add default Ignore and Skip options
+    ;; Add default Ignore, Add and Skip options
     (setq msg (concat msg "\n["
                       (propertize "C-i" 'face 'font-lock-keyword-face)
-                      "]: Ignore  "))
+                      "]: Ignore rule  "))
+    (setq msg (concat msg "["
+                      (propertize "C-a" 'face 'font-lock-keyword-face)
+                      "]: Add to LocalWords  "))
     (setq msg (concat msg "["
                       (propertize "C-s" 'face 'font-lock-keyword-face)
-                      "]: Skip  "))
+                      "]: Skip match  "))
     ;; Some people do not know C-g is the global exit key
     (setq msg (concat msg "["
                       (propertize "C-g" 'face 'font-lock-keyword-face)
@@ -93,6 +96,11 @@ PRESSED-KEY is the index of the suggestion in the array contained
 on OVERLAY."
   (cond
    ((char-equal ?\C-i pressed-key)
+    (save-excursion
+      (push (alist-get 'id (overlay-get overlay 'languagetool-rule)) languagetool-local-disabled-rules)
+      (add-file-local-variable 'languagetool-local-disabled-rules languagetool-local-disabled-rules)
+      (delete-overlay overlay)))
+   ((char-equal ?\C-a pressed-key)
     (progn
       (goto-char (overlay-end overlay))
       (ispell-add-per-file-word-list (buffer-substring-no-properties (overlay-start overlay) (overlay-end overlay)))
