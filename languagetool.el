@@ -93,7 +93,7 @@ checked."
        (list (region-beginning) (region-end))
      (list (point-min) (point-max))))
   (if languagetool-server-mode
-      (languagetool-server-check)
+      (languagetool-server-send-request)
     (languagetool-console-check begin end)))
 
 ;;;###autoload
@@ -101,17 +101,17 @@ checked."
   "Pops up transient buffer to do correction at point."
   (interactive)
   (when languagetool-server-mode
-    (setq languagetool-server-correction-p t))
+    (setq languagetool-server-correcting-p t))
   (languagetool-correction-at-point)
   (when languagetool-server-mode
-    (setq languagetool-server-correction-p nil)))
+    (setq languagetool-server-correcting-p nil)))
 
 ;;;###autoload
 (defun languagetool-correct-buffer ()
   "Pops up transient buffer to do correction in the whole buffer."
   (interactive)
   (when languagetool-server-mode
-    (setq languagetool-server-correction-p t))
+    (setq languagetool-server-correcting-p t))
   (condition-case err
       (save-excursion
         (dolist (ov (reverse (overlays-in (point-min) (point-max))))
@@ -121,10 +121,10 @@ checked."
             (languagetool-correction-at-point))))
     ((quit error)
      (when languagetool-server-mode
-       (setq languagetool-server-correction-p nil))
+       (setq languagetool-server-correcting-p nil))
      (error "%s" (error-message-string err))))
   (when languagetool-server-mode
-    (setq languagetool-server-correction-p nil)))
+    (setq languagetool-server-correcting-p nil)))
 
 (provide 'languagetool)
 
