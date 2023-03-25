@@ -1,4 +1,4 @@
-;;; languagetool-server.el --- Description -*- lexical-binding: t; -*-
+;;; languagetool-server.el --- LanguageTool Server commands -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020-2022  Joar Buitrago
 
