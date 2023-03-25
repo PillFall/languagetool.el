@@ -163,6 +163,14 @@ this at the end of your file.
 # LocalWords: seplling
 #+END_SRC
 
+You can select between the default or the "picky" level when checking the
+buffer. When using the "picky" level, additional rules will activate, i.e. rules
+that you might only find useful when checking formal text. To change the level
+you can set your [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Specifying-File-Variables.html][local file variable]] ~languagetool-suggestion-level~ to the
+value desired, in lowercase.
+
+
+
 
 
 ** Quick Usage
