@@ -128,6 +128,10 @@ for this package to work."
     (when (stringp languagetool-mother-tongue)
       (push (list "--mothertongue" languagetool-mother-tongue) arguments))
 
+    ;; Appends LanguageTool Suggestion level information
+    (when (stringp languagetool-suggestion-level)
+      (push (list "--level" (upcase languagetool-suggestion-level)) arguments))
+
     ;; Appends the disabled rules
     (let ((rules (string-join (append languagetool-disabled-rules languagetool-local-disabled-rules) ",")))
       (unless (string= rules "")
