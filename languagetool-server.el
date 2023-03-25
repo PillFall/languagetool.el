@@ -276,6 +276,10 @@ used in the POST request made to the LanguageTool server."
     (when (stringp languagetool-username)
       (push (list "username" languagetool-username) arguments))
 
+;; Appends LanguageTool suggestion level information
+    (when (stringp languagetool-suggestion-level)
+      (push (list "level" languagetool-suggestion-level) arguments))
+
     ;; Appends the disabled rules
     (let ((rules))
       ;; Global disabled rules
