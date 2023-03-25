@@ -1,11 +1,11 @@
-;;; languagetool-server.el --- Description -*- lexical-binding: t; -*-
+;;; languagetool-server.el --- LanguageTool Server commands -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020-2022  Joar Buitrago
 
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 1.2.0
+;; Version: 1.3.0
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify

@@ -7,6 +7,8 @@ Versioning]].
 
 
 ** [Unreleased]
+
+** [1.3.0]
 *** Added
 - Support for LanguageTool suggestion level. (Fix #18)
 
