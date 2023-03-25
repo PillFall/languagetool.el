@@ -76,6 +76,17 @@ which can be mistranslated."
           (const nil)
           string))
 
+(defcustom languagetool-suggestion-level nil
+  "If set, additional rules will be activated.
+
+For example, rules that you might only find useful when checking
+formal text."
+  :group 'languagetool
+  :local t
+  :type '(choice
+          (const nil)
+          string))
+
 (defcustom languagetool-core-languages
   '(("auto" . "Automatic Detection")
     ("ar" . "Arabic")
