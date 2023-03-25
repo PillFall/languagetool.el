@@ -5,7 +5,7 @@
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 1.2.0
+;; Version: 1.3.0
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -72,6 +72,17 @@ translated to Polish as \"poświęcenie\". But there is a word in
 Polish \"abnegacja\" which means slovenliness or untidiness,
 which can be mistranslated."
   :group 'languagetool
+  :type '(choice
+          (const nil)
+          string))
+
+(defcustom languagetool-suggestion-level nil
+  "If set, additional rules will be activated.
+
+For example, rules that you might only find useful when checking
+formal text."
+  :group 'languagetool
+  :local t
   :type '(choice
           (const nil)
           string))

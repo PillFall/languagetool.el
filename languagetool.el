@@ -5,8 +5,8 @@
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 1.2.0
-;; Package-Requires: ((emacs "27.0"))
+;; Version: 1.3.0
+;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@
   "Set LanguageTool correction language to LANG."
   (interactive
    (list (read-string "LanguageTool new language: "
-                      (alist-get languagetool-correction-language languagetool-core-languages)
+                      (cdr (assoc languagetool-correction-language languagetool-core-languages))
                       languagetool-correction-language-history
                       (let (languages-choices)
                         (dolist (language
@@ -73,7 +73,7 @@ as you are not suppose to call this function."
   (interactive)
   (when languagetool-server-mode
     (error "Do not use this function in server mode
-If you want to clear the suggestions turn off the server mode)"))
+If you want to clear the suggestions turn off the server mode"))
   (languagetool-core-clear-buffer))
 
 ;;;###autoload
@@ -93,7 +93,7 @@ checked."
        (list (region-beginning) (region-end))
      (list (point-min) (point-max))))
   (if languagetool-server-mode
-      (languagetool-server-check)
+      (languagetool-server-send-request)
     (languagetool-console-check begin end)))
 
 ;;;###autoload
@@ -101,17 +101,17 @@ checked."
   "Pops up transient buffer to do correction at point."
   (interactive)
   (when languagetool-server-mode
-    (setq languagetool-server-correction-p t))
+    (setq languagetool-server-correcting-p t))
   (languagetool-correction-at-point)
   (when languagetool-server-mode
-    (setq languagetool-server-correction-p nil)))
+    (setq languagetool-server-correcting-p nil)))
 
 ;;;###autoload
 (defun languagetool-correct-buffer ()
   "Pops up transient buffer to do correction in the whole buffer."
   (interactive)
   (when languagetool-server-mode
-    (setq languagetool-server-correction-p t))
+    (setq languagetool-server-correcting-p t))
   (condition-case err
       (save-excursion
         (dolist (ov (reverse (overlays-in (point-min) (point-max))))
@@ -121,10 +121,10 @@ checked."
             (languagetool-correction-at-point))))
     ((quit error)
      (when languagetool-server-mode
-       (setq languagetool-server-correction-p nil))
+       (setq languagetool-server-correcting-p nil))
      (error "%s" (error-message-string err))))
   (when languagetool-server-mode
-    (setq languagetool-server-correction-p nil)))
+    (setq languagetool-server-correcting-p nil)))
 
 (provide 'languagetool)
 

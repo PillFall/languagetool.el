@@ -5,7 +5,7 @@
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 1.2.0
+;; Version: 1.3.0
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -92,7 +92,7 @@ Each element is a cons cell with the form (ISSUE_TYPE . FACE_NAME)."
 
 (defun languagetool-issue-get-face (issue-type)
   "Return the face for ISSUE-TYPE."
-  (or (alist-get issue-type languagetool-issue-face-alist)
+  (or (cdr (assoc issue-type languagetool-issue-face-alist))
       'languagetool-issue-default))
 
 (defun languagetool-issue-create-overlay (begin end correction)

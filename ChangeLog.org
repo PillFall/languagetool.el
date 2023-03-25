@@ -8,6 +8,14 @@ Versioning]].
 
 ** [Unreleased]
 
+** [1.3.0]
+*** Added
+- Support for LanguageTool suggestion level. (Fix #18)
+
+*** Fixed
+- Face choosing algorithm.
+- Error when checking the matches between server requests. (Fix #14)
+
 ** [1.2.0]
 *** Added
 - Support for ~ispell~ ~LocalWords~ ignored words.

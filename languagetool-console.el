@@ -5,7 +5,7 @@
 ;; Author: Joar Buitrago <jebuitragoc@unal.edu.co>
 ;; Keywords: grammar text docs tools convenience checker
 ;; URL: https://github.com/PillFall/Emacs-LanguageTool.el
-;; Version: 1.2.0
+;; Version: 1.3.0
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -128,25 +128,30 @@ for this package to work."
     (when (stringp languagetool-mother-tongue)
       (push (list "--mothertongue" languagetool-mother-tongue) arguments))
 
+    ;; Appends LanguageTool Suggestion level information
+    (when (stringp languagetool-suggestion-level)
+      (push (list "--level" (upcase languagetool-suggestion-level)) arguments))
+
     ;; Appends the disabled rules
     (let ((rules (string-join (append languagetool-disabled-rules languagetool-local-disabled-rules) ",")))
       (unless (string= rules "")
         (push (list "--disable" rules) arguments )))
     (flatten-tree (reverse arguments))))
 
-(defun languagetool-console-write-debug-info (text)
+(defun languagetool-console-write-debug-info (parsed-arguments text)
   "Write debug info in `languagetool-console-output-buffer-name'.
 
-The argument TEXT is the region passed to LanguageTool for
-checking."
+PARSED-ARGUMENTS is a list with all the arguments that are passed
+to LanguageTool and Java.
+
+TEXT is the region passed to LanguageTool for checking."
   (insert
    (propertize " ----- LanguageTool Command:" 'face 'font-lock-warning-face)
    "\n\n"
    (string-join
     (append
      (list languagetool-java-bin)
-     (languagetool-java-parse-arguments)
-     (languagetool-console-parse-arguments))
+     parsed-arguments)
     " ")
    "\n\n\n\n"
    (propertize " ----- LanguageTool Text:" 'face 'font-lock-warning-face)
@@ -172,19 +177,21 @@ The region is delimited by BEGIN and END."
     (let ((status 0)
           (buffer (get-buffer-create languagetool-console-output-buffer-name))
           (text (buffer-substring-no-properties begin end))
-          (json-parsed nil))
+          (json-parsed nil)
+          (parsed-arguments
+           (append
+            (languagetool-java-parse-arguments)
+            (languagetool-console-parse-arguments))))
       (with-current-buffer buffer
         (erase-buffer)
-        (languagetool-console-write-debug-info text))
+        (languagetool-console-write-debug-info parsed-arguments text))
       (setq status
             (apply #'call-process-region begin end
                    languagetool-java-bin
                    nil
                    languagetool-console-output-buffer-name
                    nil
-                   (append
-                    (languagetool-java-parse-arguments)
-                    (languagetool-console-parse-arguments))))
+                   parsed-arguments))
       (when (/= status 0)
         (error "LanguageTool returned with status %d" status))
       (with-current-buffer buffer
