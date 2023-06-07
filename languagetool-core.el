@@ -175,12 +175,12 @@ A example hint function:
 \(defun hint-function ()
   \"Hint display function.\"
   (dolist (ov (overlays-at (point)))
-    (when (overlay-get ov 'languagetool-message)
+    (when (overlay-get ov \\='languagetool-message)
       (unless (current-message)
         (message
          \"%s%s\"
-         (overlay-get ov 'languagetool-short-message)
-         (if (/= 0 (length (overlay-get ov 'languagetool-replacements)))
+         (overlay-get ov \\='languagetool-short-message)
+         (if (/= 0 (length (overlay-get ov \\='languagetool-replacements)))
              (concat
               \" -> (\"
               (string-join (languagetool-core-get-replacements ov) \", \")
