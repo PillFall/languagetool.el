@@ -160,6 +160,7 @@ Each element is a cons-cell with the form (CODE . NAME)."
   "LanguageTool buffer local disabled rules."
   :group 'languagetool
   :local t
+  :safe #'languagetool-core-safe-rules
   :type '(choice
           (const nil)
           (repeat string)))
@@ -204,6 +205,15 @@ A example hint function:
 (defun languagetool-core-safe-language (lang)
   "Return non-nil if LANG is safe to use."
   (assoc lang languagetool-core-languages))
+
+(defun languagetool-core-safe-rules (rules)
+  "Return non-nil if RULES is safe to use.
+To be valid, RULES must be a list of strings form of \"UPPER_UNDERSCORE\"."
+  (and (listp rules)
+       (seq-every-p (lambda (rule)
+                      (and (stringp rule)
+                           (string-match-p "^[A-Z_]+$" rule)))
+                    rules)))
 
 (defun languagetool-core-clear-buffer ()
   "Deletes all buffer overlays."
