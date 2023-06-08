@@ -208,8 +208,7 @@ A example hint function:
 
 (defun languagetool-core-safe-rules (rules)
   "Return non-nil if RULES is safe to use.
-To be valid, RULES must be a list of strings form of \"UPPER_UNDERSCORE\".
-"
+To be valid, RULES must be a list of strings form of \"UPPER_UNDERSCORE\"."
   (and (listp rules)
        (seq-every-p (lambda (rule)
                       (and (stringp rule)
