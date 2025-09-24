@@ -288,7 +288,7 @@ used in the POST request made to the LanguageTool server."
         (push (list "disabledRules" rules) arguments)))
 
     ;; Add the buffer contents
-    (push (list "text" (buffer-substring-no-properties (point-min) (point-max))) arguments)))
+    (push (list "text" (url-hexify-string (buffer-substring-no-properties (point-min) (point-max)))) arguments)))
 
 (defun languagetool-server-should-check (&rest _args)
   "Tell the package to send a request if there are no more edit commands in a time.
@@ -304,7 +304,8 @@ end and length into the ARGS argument."
 (defun languagetool-server-send-request ()
   "Send a request to the server and parse the output given."
   (let ((url-request-method "POST")
-        (url-request-data (url-build-query-string (languagetool-server-parse-request))))
+        (url-request-data (url-build-query-string (languagetool-server-parse-request)))
+	(url-request-extra-headers '(("Content-Type" . "application/x-www-form-urlencoded"))))
     (url-retrieve
      (url-encode-url(format "%s:%d/v2/check" languagetool-server-url languagetool-server-port))
      #'languagetool-server-highlight-matches
