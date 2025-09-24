@@ -1,6 +1,6 @@
 name: Bug Report
 description: Create a new issue to file a bug report
-title: 🐛 
+title: 🐛 
 labels:
   - bug
 body:
@@ -15,36 +15,33 @@ body:
     id: languagetool-version
     attributes:
       label: What version of LanguageTool are you running?
-      description: Run `languagetool` and check it in about
+      description: Run `languagetool` and check look in "About"
     validations:
       required: true
   - type: input
     id: package-version
     attributes:
       label: What version of this package are you running?
-      description: You can find it in the header comments of your `.el` files
+      description: You can find it in the header comments of your `.el` files or if using directly from git, provide the commit hash.
     validations:
       required: true
   - type: textarea
     id: current-behaviour
     attributes:
-      label: What is the current behaviour?
+      label: Which is the current behaviour?
       description: Write a concise description of what you're experiencing.
       placeholder: Tell us what you see!
-      render: markdown
   - type: textarea
     id: expected-behaviour
     attributes:
-      label: What is you expect to happen?
+      label: What do you expect to happen?
       description: Write a concise description of what you expected to happen.
       placeholder: Tell us what you want!
-      render: markdown
   - type: textarea
     attributes:
       label: What do you do to get this bug?
       description: Write the steps to reproduce the behavior.
       placeholder: |
         1. With this config...
-        2. Run '...'
+        2. Run `...`
         3. See error...
-      render: markdown
