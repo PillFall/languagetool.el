@@ -24,9 +24,9 @@ you find an issue to work on, you are welcome to open a PR with a fix.
 When you're finished with the changes, create a pull request, also known as a
 PR.
 
-- Brach out from ~develop~, name the branch the way you want, but keep in mind
+- Brach out from ~master~, name the branch the way you want, but keep in mind
   that is better to name the branch after the feature or fix.
-- All PR that doesn't come from-to ~develop~ will be rejected.
+- All PR that doesn't come from-to ~master~ will be rejected.
 - Don't forget to link PR to issue if you are solving one.
 - Enable the checkbox to allow maintainer edits so the branch can be update for
   a merge. Once you submit your PR, your code will be reviewed. We may ask
