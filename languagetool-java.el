@@ -48,20 +48,20 @@
 Described at http://wiki.languagetool.org/command-line-options,
 recommends to use:
 
-\(setq `languagetool-java-arguments' '(\"-Dfile.encoding=UTF-8\"))
+\(setq `languagetool-java-arguments' \\='(\"-Dfile.encoding=UTF-8\"))
 
 When using LanguageTool via it classes this variable should be
 set to:
 
 \(setq `languagetool-java-arguments'
-      '(\"-Dfile.encoding=UTF-8\"
+      \\='(\"-Dfile.encoding=UTF-8\"
         \"-cp\"
         \"/path/to/classes:/path/to/classes\"))
 
 For example to use in Arch Linux (with pacman dependency):
 
 \(setq `languagetool-java-arguments'
-      '(\"-Dfile.encoding=UTF-8\"
+      \\='(\"-Dfile.encoding=UTF-8\"
         \"-cp\"
         \"/usr/share/languagetool:/usr/share/java/languagetool/*\"))"
   :group 'languagetool-java
