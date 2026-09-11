@@ -28,11 +28,11 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
-      - name: Install emacs
+      - name: Install Emacs
         uses: purcell/setup-emacs@v8
         with:
           version: ${{ matrix.emacs_version }}
-      - name: Install required packages and Byte-compile the code
+      - name: Install required packages and byte-compile the code
         run: make ci
         env:
           LOAD_PATH: "-f package-initialize -L ."
