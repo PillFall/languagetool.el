@@ -37,14 +37,14 @@ $(PKG).el:  $(PKG)-correction.el $(PKG)-console.el $(PKG)-server.el
 lisp: $(ELCS)
 
 %.elc: %.el
-	@printf "Compiling $<\n"
+	$(info Compiling $<)
 	@$(BATCH) \
 	--eval "(when (file-exists-p \"$@\") (delete-file \"$@\"))" \
-    --eval "(setq byte-compile-error-on-warn t)" \
+	--eval "(setq byte-compile-error-on-warn t)" \
 	-f batch-byte-compile $<
 
 clean:
-	@printf "Cleaning byte compiled lisp...\n"
+	$(info Cleaning byte compiled lisp...)
 	@rm -f *.elc
 
 ## CI integration ####################################################
