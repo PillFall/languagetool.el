@@ -29,7 +29,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v7
       - name: Install Emacs
-        uses: purcell/setup-emacs@v8
+        uses: purcell/setup-emacs@master
         with:
           version: ${{ matrix.emacs_version }}
       - name: Install required packages and byte-compile the code
