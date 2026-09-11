@@ -311,7 +311,9 @@ used in the POST request made to the LanguageTool server."
 
     ;; Add the buffer contents
     (let ((markup-function (or languagetool-server-markup-function
-                               (alist-get major-mode languagetool-server-markup-functions-alist :testfn #'provided-mode-derived-p))))
+                               (cdr (assoc major-mode
+                                           languagetool-server-markup-functions-alist
+                                           (lambda (test current) (provided-mode-derived-p current test)))))))
       (if (functionp markup-function)
           (push (list "data" (json-encode (funcall markup-function))) arguments)
         (push (list "text" (url-hexify-string (buffer-substring-no-properties (point-min) (point-max)))) arguments)))))
