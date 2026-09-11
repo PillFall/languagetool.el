@@ -83,6 +83,30 @@ More info at http://wiki.languagetool.org/command-line-options."
   :group 'languagetool-server
   :type 'number)
 
+(defcustom languagetool-server-markup-function nil
+  "LanguageTool Server function to tokenize the buffer into annotation.
+
+This function is called with no arguments in the current buffer and must
+return an alist with the representation of the buffer in LanguageTool
+annotation structure.
+
+See more at http://wiki.languagetool.org/public-http-api."
+  :group 'languagetool-server
+  :local t
+  :type '(choice
+          (const nil)
+          function))
+
+(defcustom languagetool-server-markup-functions-alist nil
+  "LanguageTool Server alist associating major modes to tokenization functions.
+
+When `languagetool-server-mode' activates, it checks this list using
+`derived-mode-p' to automatically select the right tokenizer."
+  :group 'languagetool-server
+  :type '(alist
+          :key-type (symbol :tag "Mode")
+          :value-type function))
+
 (defvar languagetool-server-output-buffer-name "*LanguageTool Server Output*"
   "LanguageTool Server output buffer for debugging.")
 
@@ -108,7 +132,6 @@ More info at http://wiki.languagetool.org/command-line-options."
   (if languagetool-server-mode
       (languagetool-server-mode-on)
     (languagetool-server-mode-off)))
-
 
 (defun languagetool-server-mode-on ()
   "Turn on LanguageTool Server mode.
@@ -141,7 +164,6 @@ Don't use this function, use `languagetool-server-mode' instead."
 
   ;; Delete all LanguageTool overlays
   (languagetool-core-clear-buffer))
-
 
 (defun languagetool-server-class-p ()
   "Return non-nil if `languagetool-server-command' is a Java class."
@@ -276,7 +298,7 @@ used in the POST request made to the LanguageTool server."
     (when (stringp languagetool-username)
       (push (list "username" languagetool-username) arguments))
 
-;; Appends LanguageTool suggestion level information
+    ;; Appends LanguageTool suggestion level information
     (when (stringp languagetool-suggestion-level)
       (push (list "level" languagetool-suggestion-level) arguments))
 
@@ -288,7 +310,11 @@ used in the POST request made to the LanguageTool server."
         (push (list "disabledRules" rules) arguments)))
 
     ;; Add the buffer contents
-    (push (list "text" (url-hexify-string (buffer-substring-no-properties (point-min) (point-max)))) arguments)))
+    (let ((markup-function (or languagetool-server-markup-function
+                               (alist-get major-mode languagetool-server-markup-functions-alist :testfn #'provided-mode-derived-p))))
+      (if (functionp markup-function)
+          (push (list "data" (json-encode (funcall markup-function))) arguments)
+        (push (list "text" (url-hexify-string (buffer-substring-no-properties (point-min) (point-max)))) arguments)))))
 
 (defun languagetool-server-should-check (&rest _args)
   "Tell the package to send a request if there are no more edit commands in a time.
@@ -305,7 +331,7 @@ end and length into the ARGS argument."
   "Send a request to the server and parse the output given."
   (let ((url-request-method "POST")
         (url-request-data (url-build-query-string (languagetool-server-parse-request)))
-	(url-request-extra-headers '(("Content-Type" . "application/x-www-form-urlencoded"))))
+        (url-request-extra-headers '(("Content-Type" . "application/x-www-form-urlencoded"))))
     (url-retrieve
      (url-encode-url(format "%s:%d/v2/check" languagetool-server-url languagetool-server-port))
      #'languagetool-server-highlight-matches
@@ -315,19 +341,19 @@ end and length into the ARGS argument."
 (defun languagetool-server-highlight-matches (_status checking-buffer)
   "Highlight LanguageTool Server issues in CHECKING-BUFFER.
 
-STATUS is a plist thrown by Emacs url. Throws an error if the response is null."
-  (when (/= (symbol-value 'url-http-response-status) 200)
-    (error "LanguageTool Server closed"))
+STATUS is a plist thrown by Emacs url.  Throws an error if the response is null."
   (unless languagetool-server-correcting-p
     (set-buffer-multibyte t)
+    (when (/= (symbol-value 'url-http-response-status) 200)
+      (error "%s" (buffer-substring-no-properties (point-min) (point-max))))
     (goto-char (point-max))
     (backward-sexp)
-    (let ((json-parsed (json-read)))
+    (let ((response (json-read)))
       (with-current-buffer checking-buffer
         (save-excursion
           (languagetool-core-clear-buffer)
           (when languagetool-server-mode
-            (let ((corrections (alist-get 'matches json-parsed)))
+            (let ((corrections (alist-get 'matches response)))
               (dotimes (index (length corrections))
                 (let* ((correction (aref corrections index))
                        (offset (alist-get 'offset correction))
